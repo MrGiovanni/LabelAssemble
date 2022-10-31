@@ -2,7 +2,7 @@
 
 We introduce a new initiative, "label-assemble", that assembles large-scale datasets from available data resources, instead of piling up data and labels from scratch for every task, overcoming the deficiency of the current annotation paradigms. We discover that learning from the classes in "negative examples" can better delimit the decision boundary of the class of interest. This discovery is the foundation of the "data, assemble" initiative, underlining the necessity of assembling multiple datasets with diverse (yet partial) labels. It also sheds new light on the computer-aided diagnosis of rare diseases and emerging pandemics, wherein "positive examples" are hard to collect, yet "negative examples" are relatively easier to assemble.
 
-<p align="center"><img width="100%" src="figures/fig_method.png" /></p>
+<p align="center"><img width="90%" src="figures/fig_method.png" /></p>
 
 ## Paper
 This repository will provide the official implementation of the following paper:
