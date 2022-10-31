@@ -19,3 +19,36 @@ Medical Imaging Meets NeurIPS, 2022 <br/>
 arXiv preprint arXiv:2109.12265, 2021 <br/>
 [paper](https://arxiv.org/pdf/2109.12265.pdf) | [code](https://github.com/MrGiovanni/DataAssemble) | [slides](https://d5b3ebbb-7f8d-4011-9114-d87f4a930447.filesusr.com/ugd/deaea1_d6c4a2b816f442209fbce205fc795b5a.pdf)
 
+
+
+## Dependencies
+
++ Linux
++ Python 3.6+
++ pytorch 1.2+
+
+
+## Usage of Label-Assemble
+
+### 1. Clone the repository
+```bash
+$ git clone https://github.com/MrGiovanni/LabelAssemble.git
+$ pip install -r requirements.txt
+```
+
+### 2. Prepare the datasets
+The datasets we mainly used are COVIDx and ChestX_ray14.
+So you can download the two datasets from [COVIDx-CXR2](https://www.kaggle.com/datasets/andyczhao/covidx-cxr2) and [NIH](https://nihcc.app.box.com/v/ChestXray-NIHCC). 
+
+
+### 3. Train the model
+When you have the dataset ready, you can train the model.
+```bash
+$ bash run.sh
+```
+Then you can reproduce our experiments.
+
+
+## Train models from your own data
+
+### 1. Clone the repository

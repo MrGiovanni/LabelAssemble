@@ -11,99 +11,30 @@ import torchvision.transforms
 import torch.nn.functional as F
 from sklearn.metrics import confusion_matrix, recall_score, accuracy_score, precision_score
 from noise import *
-
-
-
-
-class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
-    """Samples elements randomly from a given list of indices for imbalanced dataset
-    Arguments:
-        indices (list, optional): a list of indices
-        num_samples (int, optional): number of samples to draw
-        callback_get_label func: a callback-like function which takes two arguments - dataset and index
-    """
-
-    def __init__(self, dataset, indices=None, num_samples=None, callback_get_label=None):
-                
-        # if indices is not provided, 
-        # all elements in the dataset will be considered
-        self.indices = list(range(len(dataset))) \
-            if indices is None else indices
-
-        # define custom callback
-        self.callback_get_label = callback_get_label
-
-        # if num_samples is not provided, 
-        # draw `len(indices)` samples in each iteration
-        self.num_samples = len(self.indices) \
-            if num_samples is None else num_samples
-            
-        # distribution of classes in the dataset 
-        label_to_count = {}
-        for idx in self.indices:
-            label = self._get_label(dataset, idx)
-            if label in label_to_count:
-                label_to_count[label] += 1
-            else:
-                label_to_count[label] = 1
-        # weight for each sample
-        weights = [1.0 / label_to_count[self._get_label(dataset, idx)]
-                   for idx in self.indices]
-        self.weights = torch.DoubleTensor(weights)
-
-    def _get_label(self, dataset, idx):
-        if isinstance(dataset, torchvision.datasets.MNIST):
-            return dataset.train_labels[idx].item()
-        elif isinstance(dataset, torchvision.datasets.ImageFolder):
-            return dataset.imgs[idx][1]
-        elif self.callback_get_label:
-            return self.callback_get_label(dataset, idx)
-        else:
-            return dataset.get_labels(idx)
-           
-
-    def __iter__(self):
-        return (self.indices[i] for i in torch.multinomial(
-            self.weights, self.num_samples, replacement=True))
-
-    def __len__(self):
-        return self.num_samples
+from utils import *
 
 
 
 def get_arguments():
-
-    parser = argparse.ArgumentParser(description="xxx")
+    parser = argparse.ArgumentParser(description="COVID-19 classification")
     parser.add_argument("--dataset", type=str, default='assemble')
     parser.add_argument("--data_dir", type=str, default='./data/images')
     parser.add_argument("--data_dir2", type=str, default='xxx')
     parser.add_argument("--list_train", type=str, default='./ChestXray14_11March2021/clean_code/dataset/train_official.txt')
     parser.add_argument("--list_train2", type=str,
                         default='./ChestXray14_11March2021/clean_code/dataset/train_official.txt')
-
     parser.add_argument("--list_test", type=str, default='./ChestXray14_11March2021/clean_code/dataset/test_official.txt')
     parser.add_argument("--list_test2", type=str,
                         default='./ChestXray14_11March2021/clean_code/dataset/test_official.txt')
-
     parser.add_argument("--num_class", type=int, default=2)
     parser.add_argument("--mode", type=str, default='train')
     parser.add_argument("--epochs", type=int, default=64)
     parser.add_argument("--test_interval", type=int, default=3)
     parser.add_argument("--LR", type=float, default=2e-4)
-
+    parser.add_argument("--save_dir", type=str, default='model')
     return parser
 
 
-def computeAUROC(dataGT, dataPRED, classCount):
-    outAUROC = []
-    dataGT = np.array(dataGT)
-    dataPRED = np.array(dataPRED)
-    for i in range(classCount):
-        try:
-            outAUROC.append(roc_auc_score(dataGT[:, i], dataPRED[:, i]))
-        except:
-            outAUROC.append(0.)
-    return outAUROC
 
 
 def test(model, args):
@@ -195,12 +126,11 @@ def main():
                                     ,transform2=transforms, reduct_ratio=10, transform_consistency=transforms_consistency)
         elif args.dataset == 'assemble':
             trainset = datasets.Assemble(['dataset', 'images/images'], ['dataset', 'images/train.txt'], augment=[transforms, transforms_consistency], num_class=args.num_class)
+            
         # dataloader=torch.utils.data.DataLoader(trainset, batch_size=32, shuffle=True, num_workers=12, pin_memory=True)
-
         dataloader=torch.utils.data.DataLoader(trainset, sampler=ImbalancedDatasetSampler(trainset), batch_size=32, num_workers=12, pin_memory=True)
 
         model = densenet121.densenet121(pretrained=True,num_classes=args.num_class)
-        #model.classifier_me = torch.nn.Sequential(torch.nn.Linear(model.classifier_me.in_features, args.num_class), torch.nn.Sigmoid())
         model.train()
         model = model.cuda()
 
@@ -216,18 +146,6 @@ def main():
         lr_count=0
 
         optimizer = torch.optim.Adam(lr=args.LR, params=filter(lambda p: p.requires_grad, model.parameters()))
-        #optimizer.add_param_group({'params':model.encodings,'lr':args.LR})
-
-        # model=torch.load('best')
-        # test(model,args)
-        # # # model = torch.load('best2_6')
-        # # # test(model, args)
-        # # # model = torch.load('best2_7')
-        # # # test(model, args)
-        # return 0
-        # model = torch.load('best_aug_nopseudo')
-        # test(model, args)
-        # return 0
 
         for i in range(args.epochs):
             print(f'epoch: {i}/{args.epochs}')
@@ -322,7 +240,7 @@ def main():
                 loss.backward()
                 optimizer.step()
 
-            torch.save(model,'noiseCovid/f/epoch_%d' %i)
+            torch.save(model,'%s/epoch_%d' %(args.save_dir, i))
 
 
             if i%args.test_interval==0:
@@ -333,7 +251,7 @@ def main():
                         best_auc=auc
                         best_auc_full=auc_full
                         best_epoch = i
-                        torch.save(model,'noiseCovid/f/best')
+                        torch.save(model,'%s/best' % args.save_dir)
                     else:
                         lr_count+=1
                     print(f'best auc: {best_auc}   {best_auc_full}, best epoch: {best_epoch}')
