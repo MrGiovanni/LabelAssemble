@@ -10,8 +10,8 @@ from sklearn.metrics._ranking import roc_auc_score
 import torchvision.transforms
 import torch.nn.functional as F
 from sklearn.metrics import confusion_matrix, recall_score, accuracy_score, precision_score
+from noise import *
 import os
-
 
 
 
@@ -49,6 +49,14 @@ class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
         # weight for each sample
         weights = [1.0 / label_to_count[self._get_label(dataset, idx)]
                    for idx in self.indices]
+        sum2 = sum(weights[2:])
+        sum1 = sum(weights[:2])
+        ratio = sum2 / sum1
+        weights[0] = weights[0] * ratio
+        weights[1] = weights[1] * ratio
+        # print(weights)
+        # input()
+        
         self.weights = torch.DoubleTensor(weights)
 
     def _get_label(self, dataset, idx):
@@ -73,23 +81,22 @@ class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
 
 def get_arguments():
 
-    parser = argparse.ArgumentParser(description="xxx")
-    parser.add_argument("--dataset", type=str, default='assemble')
-    parser.add_argument("--data_dir", type=str, default='./data/images')
-    parser.add_argument("--data_dir2", type=str, default='xxx')
-    parser.add_argument("--list_train", type=str, default='./ChestXray14_11March2021/clean_code/dataset/train_official.txt')
-    parser.add_argument("--list_train2", type=str,
-                        default='./ChestXray14_11March2021/clean_code/dataset/train_official.txt')
-
-    parser.add_argument("--list_test", type=str, default='./ChestXray14_11March2021/clean_code/dataset/test_official.txt')
-    parser.add_argument("--list_test2", type=str,
-                        default='./ChestXray14_11March2021/clean_code/dataset/test_official.txt')
-
-    parser.add_argument("--num_class", type=int, default=3)
+    parser = argparse.ArgumentParser(description="Assemble Label")
+    parser.add_argument("--datasetType", type=str, default='assemble')
+    parser.add_argument("--covidxTrainImagePath", type=str)
+    parser.add_argument("--covidxTestImagePath", type=str)
+    parser.add_argument("--chestImagePath", type=str)
+    parser.add_argument('--covidxTrainFilePath', type=str)
+    parser.add_argument('--covidxTestFilePath', type=str)
+    parser.add_argument("--chestFilePath", type=str)
+    parser.add_argument("--numClass", type=int, default=15)
     parser.add_argument("--mode", type=str, default='train')
     parser.add_argument("--epochs", type=int, default=64)
-    parser.add_argument("--test_interval", type=int, default=3)
-    parser.add_argument("--LR", type=float, default=2e-4)
+    parser.add_argument("--testInterval", type=int, default=3)
+    parser.add_argument("--lr", type=float, default=2e-4)
+    parser.add_argument("--covidxRatio", type=float, default=1)
+    parser.add_argument("--chestRatio", type=float, default=1)
+    parser.add_argument("--saveDir", type=str)
 
     return parser
 
@@ -107,8 +114,6 @@ def computeAUROC(dataGT, dataPRED, classCount):
 
 
 def test(model, args):
-    augment = Augmentation(normalize="imagenet").get_augmentation(
-        "{}_{}".format('full', 224), "valid")
 
     normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
@@ -118,17 +123,10 @@ def test(model, args):
                                                 torchvision.transforms.ToTensor(),
                                                 normalize])
 
-    if args.dataset=='nih':
-        testset = datasets.NIH(args.data_dir, args.list_test, transform=transforms, num_class=args.num_class)
-    elif args.dataset=='chexpert':
-        testset = datasets.Chexpert(args.data_dir, args.list_test, transform=transforms, num_class=args.num_class)
-    elif args.dataset=='CXR3':
-        testset = datasets.CXR3('dataset', 'dataset', transforms, num_class=3, mode='test')
-    elif args.dataset == 'assemble':
-        testset = datasets.CXR3('dataset', 'dataset', transforms, num_class=3, mode='test')
 
+    testset = datasets.COVIDX(img_path=args.covidxTestImagePath, file_path=args.covidxTestFilePath, augment=transforms, num_class=args.numClass)
 
-    dataloader=torch.utils.data.DataLoader(testset, batch_size=128, shuffle=True, num_workers=12, pin_memory=True)
+    dataloader=torch.utils.data.DataLoader(testset, batch_size=8, shuffle=True, num_workers=12, pin_memory=True)
 
     predict = []
     target = []
@@ -143,14 +141,13 @@ def test(model, args):
             outputs,fea=model(inputs)
             predict.append(outputs)
             target.append(labels)
-
     predict = torch.cat(predict, dim=0).cpu().numpy()
     target = torch.cat(target, dim=0).cpu().numpy()
-    auc = computeAUROC(target, predict[:, 1], args.num_class)
+    auc = computeAUROC(target, predict, args.numClass)
     print(f'\n {auc}  avg_auc: {np.average(auc)} \n')
-    # predict, target = np.argmax(predict[:, :2], axis=1), np.argmax(target, axis=1)
-    predict, target = predict[:, 0] > 0.5, target[:, 0]
-
+    # print(predict[:10, :])
+    # input(666)
+    predict, target = predict[:, 0] > 0.0001, target[:, 0]
     print(confusion_matrix(target, predict))
     print('acc:', accuracy_score(target, predict), 'precision:', precision_score(target, predict), 'sensitivity:', recall_score(target, predict))
 
@@ -160,9 +157,9 @@ def main():
     parser = get_arguments()
     args = parser.parse_args()
 
+    os.makedirs(args.saveDir, exist_ok=False)
+
     if args.mode=='train':
-        augment = Augmentation(normalize="imagenet").get_augmentation(
-            "{}_{}".format('full', 224), "train")
 
         normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                      std=[0.229, 0.224, 0.225])
@@ -170,6 +167,8 @@ def main():
             torchvision.transforms.RandomHorizontalFlip(),
             torchvision.transforms.RandomRotation(10),
             torchvision.transforms.Resize(256),
+            AddPepperNoise(snr=0.9, p=0.1),
+            AddGaussianNoise(p=0.3),
             torchvision.transforms.CenterCrop(256),
             torchvision.transforms.ToTensor(),
             normalize
@@ -180,25 +179,24 @@ def main():
             torchvision.transforms.RandomRotation(15),
             torchvision.transforms.Resize(256),
             torchvision.transforms.CenterCrop(256),
+            AddPepperNoise(snr=0.7, p=0.5),
+            AddGaussianNoise(p=0.5),
             torchvision.transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
             torchvision.transforms.ToTensor(),
             normalize,
             torchvision.transforms.RandomErasing()
         ])
-        if args.dataset=='nih':
-            trainset=datasets.NIH(args.data_dir, args.list_train, transform=transforms, num_class=args.num_class, reduct_ratio=1)
-        elif args.dataset=='chexpert':
-            trainset = datasets.Chexpert(args.data_dir, args.list_train, transform=transforms, num_class=args.num_class)
-        elif args.dataset=='c_c':
-            trainset = datasets.c_c(args.data_dir,args.data_dir2,args.list_train,args.list_train2,transform1=transforms
-                                    ,transform2=transforms, reduct_ratio=10, transform_consistency=transforms_consistency)
-        elif args.dataset == 'assemble':
-            trainset = datasets.Assemble(['dataset', 'images/images'], ['dataset', 'images/train.txt'], augment=[transforms, transforms_consistency], num_class=3)
+
+        if args.datasetType == 'assemble':
+            trainset = datasets.Assemble([args.covidxTrainImagePath, args.chestImagePath], 
+    [args.covidxTrainFilePath, args.chestFilePath], augments=[transforms, transforms_consistency],
+    covidx_ratio=args.covidxRatio, chest_ratio=args.chestRatio, 
+    label_assembles=['Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule','Pneumonia', 'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'], num_class=args.numClass)
         # dataloader=torch.utils.data.DataLoader(trainset, batch_size=32, shuffle=True, num_workers=12, pin_memory=True)
 
-        dataloader=torch.utils.data.DataLoader(trainset, sampler=ImbalancedDatasetSampler(trainset), batch_size=32, num_workers=12, pin_memory=True)
+        dataloader=torch.utils.data.DataLoader(trainset, batch_size=8, num_workers=12, pin_memory=True)
 
-        model = densenet121.densenet121(pretrained=True,num_classes=args.num_class)
+        model = densenet121.densenet121(pretrained=True,num_classes=args.numClass)
         #model.classifier_me = torch.nn.Sequential(torch.nn.Linear(model.classifier_me.in_features, args.num_class), torch.nn.Sigmoid())
         model.train()
         model = model.cuda()
@@ -209,28 +207,16 @@ def main():
         best_epoch=-1
         best_auc_full=None
 
-        best_auc2=-1
-        best_auc_full_2=None
-        best_epoch2=-1
         lr_count=0
 
-        optimizer = torch.optim.Adam(lr=args.LR, params=filter(lambda p: p.requires_grad, model.parameters()))
-        #optimizer.add_param_group({'params':model.encodings,'lr':args.LR})
+        optimizer = torch.optim.Adam(lr=args.lr, params=filter(lambda p: p.requires_grad, model.parameters()))
 
-        # model=torch.load('best')
-        # test(model,args)
-        # # # model = torch.load('best2_6')
-        # # # test(model, args)
-        # # # model = torch.load('best2_7')
-        # # # test(model, args)
-        # return 0
-        # model = torch.load('best_aug_nopseudo')
-        # test(model, args)
-        # return 0
 
         for i in range(args.epochs):
             print(f'epoch: {i}/{args.epochs}')
+            cnt = 0
             for img, label, source, img_consistency in tqdm(dataloader):
+  
                 img, label, source, img_consistency=img.cuda(), label.cuda(), source.cuda(), img_consistency.cuda()
                 output, dis_res=model(img)
                 output_consistency,_ = model(img_consistency)
@@ -238,17 +224,15 @@ def main():
                 loss = torch.tensor(0.).cuda()
                 loss_consistency = torch.tensor(0.).cuda()
 
+                # if args.dataset=='c_c':
+                #     loss = torch.tensor(0.).cuda()
 
-
-                if args.dataset=='c_c':
-                    loss = torch.tensor(0.).cuda()
-
-                    for i1 in range(len(img)):
-                        for i2 in range(args.num_class):
-                            if i2 in [2, 5]: #[8,9,2,6,7]:
-                                loss += criterion(output[i1][i2], label[i1][i2])
-                    loss = loss / len(img)
-                elif args.dataset == 'assemble':
+                #     for i1 in range(len(img)):
+                #         for i2 in range(args.num_class):
+                #             if i2 in [2, 5]: #[8,9,2,6,7]:
+                #                 loss += criterion(output[i1][i2], label[i1][i2])
+                #     loss = loss / len(img)
+                if args.datasetType == 'assemble':
                     loss = torch.tensor(0.).cuda()
                     loss_consistency=torch.tensor(0.).cuda()
                     loss_pseudo = torch.tensor(0.).cuda()
@@ -256,12 +240,11 @@ def main():
                     # for i1 in range(len(img)):
                     #     for i2 in range(args.num_class):
                     #         if output[i1][i2]>0.7 and ((source[i1]==0 and i2 in [1,2]) or (source[i1]==1 and i2 in [18, 19])):
-
                     
 
 
                     for i1 in range(len(img)):
-                        for i2 in range(args.num_class):
+                        for i2 in range(0, args.numClass):
                             if source[i1] == 0:
                                 #print(label[i1][i2])
                                 loss += criterion(output[i1][i2], label[i1][i2])
@@ -275,32 +258,7 @@ def main():
                             loss_pseudo += F.mse_loss(output[i1][i2],tmp).cuda()
                             loss_consistency += F.mse_loss(output_consistency[i1][i2],tmp).cuda()
                             
-                                
-                            # elif (source[i1]==0 and i2 in [2,18]) or (source[i1]==1 and i2 in [3,19]):
-                            #     # if output[i1][i2]>0.5:
-                            #     #     loss+=F.mse_loss(output[i1][i2],output[i1][i2]+(1-output[i1][i2])/4.0).cuda()
-                            #     # else:
-                            #     #     loss += F.mse_loss(output[i1][i2],
-                            #     #                        output[i1][i2] - output[i1][i2] / 4.0).cuda()
-                            #     if output[i1][i2]>0.5:
-                            #         tmp=output[i1][i2]+(1-output[i1][i2])/1.0
-                            #     else:
-                            #         tmp=output[i1][i2]-output[i1][i2]/1.0
-                            #     loss_consistency += torch.nn.MSELoss()(output_consistency[i1][i2], tmp)
-                                #
-                                # if output[i1][i2]>0.5:
-                                #     #tmp = output[i1][i2] + (1 - output[i1][i2]) / 4.0
-                                #     tmp=output[i1][i2]
-                                #     loss += F.mse_loss(output_consistency[i1][i2], tmp).cuda()
-                                # else:
-                                #     #tmp = output[i1][i2]-output[i1][i2]/4.0
-                                #     tmp=output[i1][i2]
-                                #     loss += F.mse_loss(output_consistency[i1][i2], tmp).cuda()
-                                # elif output[i1][i2]<0.2:
-                                #     loss += criterion(output[i1][i2], torch.tensor(0.0).cuda())
-
-                            # if i2 in [1,2,3,4,5,18,19]:
-                            #     loss += criterion(output[i1][i2], label[i1][i2])
+               
 
 
                     loss=loss/len(img)
@@ -319,18 +277,18 @@ def main():
                 loss.backward()
                 optimizer.step()
 
-            torch.save(model,'AssembleCovid/weights_edema/epoch_%d' %i)
+            torch.save(model,os.path.join(args.saveDir, 'epoch_%d' %i))
 
 
-            if i%args.test_interval==0:
+            if i%args.testInterval==0:
 
-                if args.dataset=='assemble':
+                if args.datasetType=='assemble':
                     auc,auc_full=test(model, args)
                     if auc>best_auc:
                         best_auc=auc
                         best_auc_full=auc_full
                         best_epoch = i
-                        torch.save(model,'AssembleCovid/weights_edema/best')
+                        torch.save(model, os.path.join(args.saveDir, 'best'))
                     else:
                         lr_count+=1
                     print(f'best auc: {best_auc}   {best_auc_full}, best epoch: {best_epoch}')
@@ -342,11 +300,12 @@ def main():
                 for param_group in optimizer.param_groups:
                     param_group["lr"]/=2.0
 
+
 if __name__=='__main__':
     parser = get_arguments()
     args = parser.parse_args()
-    base_url = 'noiseCovid/pne_noise2/epoch_%d'
-    for i in range(0, len(os.listdir('noiseCovid/pne_noise2'))):
+    base_url = '/home/PJLAB/zhuzengle/workstation/Assemble/AssembleCovid2/all/epoch_%d'
+    for i in range(2):# range(len(os.listdir('/home/PJLAB/zhuzengle/workstation/Assemble/AssembleCovid2/all'))):
         model_url = base_url %i
         print(model_url)
         model = torch.load(model_url)
@@ -355,7 +314,7 @@ if __name__=='__main__':
 # if __name__=='__main__':
 #     parser = get_arguments()
 #     args = parser.parse_args()
-#     model_url = 'covid2/best_without_nofinding_mul'
+#     model_url = 'AssembleCovid/weights_edema/epoch_10'
 #     print(model_url)
 #     model = torch.load(model_url)
 #     test(model, args)

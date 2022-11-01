@@ -1,5 +1,3 @@
-#自定义transform
-#加入椒盐噪声
 import random
 from PIL import Image
 import numpy as np
@@ -33,7 +31,7 @@ class AddPepperNoise(object):
             return Image.fromarray(img_.astype('uint8')).convert('RGB') # 转化为PIL的形式
         else:
             return img
-#添加高斯噪声
+
 class AddGaussianNoise(object):
 
     def __init__(self, mean=0.0, variance=1.0, amplitude=1.0,p=1):
