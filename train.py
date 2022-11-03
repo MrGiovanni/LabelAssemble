@@ -39,47 +39,6 @@ def get_arguments():
 
 
 
-
-
-# def test(model, args):
-#     normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#                                      std=[0.229, 0.224, 0.225])
-#     transforms=torchvision.transforms.Compose([
-#                                                 torchvision.transforms.Resize(256),
-#                                                 torchvision.transforms.CenterCrop(256),
-#                                                 torchvision.transforms.ToTensor(),
-#                                                 normalize])
-
-
-#     testset = datasets.COVIDX(img_path=args.covidxTestImagePath, file_path=args.covidxTestFilePath, augment=transforms, num_class=args.numClass)
-
-#     dataloader=torch.utils.data.DataLoader(testset, batch_size=8, shuffle=True, num_workers=12, pin_memory=True)
-
-#     predict = []
-#     target = []
-#     model.eval()
-#     print(f'test now')
-
-
-#     for inputs, labels, _ in tqdm(dataloader):
-#         inputs = inputs.cuda()
-#         labels = labels.cuda()
-#         with torch.no_grad():
-#             outputs,fea=model(inputs)
-#             predict.append(outputs)
-#             target.append(labels)
-#     predict = torch.cat(predict, dim=0).cpu().numpy()
-#     target = torch.cat(target, dim=0).cpu().numpy()
-#     auc = computeAUROC(target, predict, args.numClass)
-#     print(f'\n {auc}  avg_auc: {np.average(auc)} \n')
-#     print(predict[:10, :])
-#     input(666)
-#     predict, target = predict[:, 0] > 0.5, target[:, 0]
-#     print(confusion_matrix(target, predict))
-#     print('acc:', accuracy_score(target, predict), 'precision:', precision_score(target, predict), 'sensitivity:', recall_score(target, predict))
-
-#     return np.average(auc), auc
-
 def train():
     parser = get_arguments()
     args = parser.parse_args()
@@ -110,7 +69,7 @@ def train():
     model = densenet121.densenet121(pretrained=True,num_classes=args.numClass)
     model.train()
     model = model.cuda()
-    criterion=torch.nn.BCELoss().cuda()
+
 
     best_auc=-1
     best_epoch=-1
@@ -129,40 +88,16 @@ def train():
             img, label, source, img_consistency=img.cuda(), label.cuda(), source.cuda(), img_consistency.cuda()
             output, dis_res=model(img)
             output_consistency,_ = model(img_consistency)
-            loss = torch.tensor(0.).cuda()
-            loss_consistency = torch.tensor(0.).cuda()
-            if args.datasetType == 'assemble':
-                loss = torch.tensor(0.).cuda()
-                loss_consistency=torch.tensor(0.).cuda()
-                loss_pseudo = torch.tensor(0.).cuda()            
-                for i1 in range(len(img)):
-                    for i2 in range(0, args.numClass):
-                        if source[i1] == 0:
-                            #print(label[i1][i2])
-                            loss += criterion(output[i1][i2], label[i1][i2])
-                        elif source[i1] == 1:
-                            #print(label[i1][i2])
-                            loss += criterion(output[i1][i2], label[i1][i2])
-                        if output[i1][i2] > 0.5:
-                            tmp = output[i1][i2]+(1-output[i1][i2])/4.0
-                        else:
-                            tmp = output[i1][i2] - output[i1][i2] / 4.0
-                        loss_pseudo += F.mse_loss(output[i1][i2],tmp).cuda()
-                        loss_consistency += F.mse_loss(output_consistency[i1][i2],tmp).cuda()
-                        
-           
+            criterion = Loss()
+            if args.datasetType == 'assemble':        
+                loss = criterion.cal_loss(output, output_consistency, label, source)
                 loss=loss/len(img)
-                # loss_pseudo=loss_pseudo/len(img)
-                loss_consistency=loss_consistency/len(img)
-                #print(f'loss: {loss}')
-                # print(f'loss_consistency: {loss_consistency}')
-            #loss_discriminator=F.cross_entropy(dis_res, source)
-            #print(f'loss: {loss}  loss_discriminator: {loss_discriminator}')
-            loss+=loss_consistency
-            loss+=loss_pseudo
+
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
         torch.save(model,os.path.join(args.saveDir, 'epoch_%d' %i))
         if i%args.testInterval==0:
             if args.datasetType=='assemble':

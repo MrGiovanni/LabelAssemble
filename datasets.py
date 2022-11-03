@@ -11,7 +11,7 @@ from torchvision import transforms
 import torchvision
 from random import shuffle
 from utils import sample
-
+from torch import FloatTensor
 
 
 
@@ -48,7 +48,7 @@ class COVIDX(Dataset):
         self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, select_num)
         
     
-    def __getitem__(self, index:int)->Tensor, list, int:
+    def __getitem__(self, index:int)->FloatTensor, list, int:
         imagePath = self.img_list[index]
         imageData = Image.open(imagePath).convert('RGB')
         imageLabel = torch.FloatTensor(self.img_label[index])
@@ -61,7 +61,6 @@ class COVIDX(Dataset):
 
     def get_labels(self, idx:int)->int:
         return self.img_label[idx].index(1)
-
 
 
 
@@ -124,7 +123,6 @@ class Assemble(Dataset):
         self.source = covidx.source + chestxray14.source
         self.augments = augments
 
-
     def __getitem__(self, index):
 
         imagePath = self.img_list[index]
@@ -155,10 +153,3 @@ class Assemble(Dataset):
             else:
                 return self.img_label[idx].index(1) + 2
 
-        # return self.img_label[idx].index(1)
-
-# if __name__ == '__main__':
-#     assemble = Assemble(['/home/PJLAB/zhuzengle/workstation/Assemble/dataset', '/home/PJLAB/zhuzengle/workstation/Assemble/images/images/train'], 
-#     ['/home/PJLAB/zhuzengle/workstation/Assemble/dataset/train.txt', '/home/PJLAB/zhuzengle/workstation/Assemble/images/train.txt'], augments=[None, None],
-#     covidx_ratio=1, chest_ratio=0, label_assembles=['Edema'], num_class=3)
-#     print(len(assemble.img_list), len(assemble.img_label))

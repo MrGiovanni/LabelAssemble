@@ -1,182 +1,75 @@
-import torchvision.transforms as transforms
-import torch
+import torchvision.transforms
+from noise import *
 
 
+class AddPepperNoise(object):
+    """"
+    Args:
+        snr (float): Signal Noise Rate
+        p (float): probability
+    """
+    def __init__(self, snr, p=0.9):
+        assert isinstance(snr, float) and (isinstance(p, float))
+        self.snr = snr
+        self.p = p
 
-
-
-
-
-
-
-
-
-
-
-
-class Augmentation():
-    def __init__(self, normalize):
-        if normalize.lower() == "imagenet":
-            self.normalize = transforms.Normalize(
-                [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        elif normalize.lower() == "chestx-ray":
-            self.normalize = transforms.Normalize(
-                [0.5056, 0.5056, 0.5056], [0.252, 0.252, 0.252])
-        elif normalize.lower() == "none":
-            self.normalize = None
+    def __call__(self, img):
+        if random.uniform(0, 1) < self.p:
+            img_ = np.array(img).copy()
+            h, w, c = img_.shape
+            signal_pct = self.snr
+            noise_pct = (1 - self.snr)
+            mask = np.random.choice((0, 1, 2), size=(h, w, 1), p=[signal_pct, noise_pct/2., noise_pct/2.])
+            mask = np.repeat(mask, c, axis=2)
+            img_[mask == 1] = 255 
+            img_[mask == 2] = 0 
+            return Image.fromarray(img_.astype('uint8')).convert('RGB') 
         else:
-            print(
-                "mean and std for [{}] dataset do not exist!".format(normalize))
-            exit(-1)
+            return img
 
-    def get_augmentation(self, augment_name, mode):
-        try:
-            aug = getattr(Augmentation, augment_name)
-            return aug(self, mode)
-        except:
-            print("Augmentation [{}] does not exist!".format(augment_name))
-            exit(-1)
+class AddGaussianNoise(object):
+    def __init__(self, mean=0.0, variance=1.0, amplitude=1.0,p=1):
+        self.mean = mean
+        self.variance = variance
+        self.amplitude = amplitude
+        self.p=p
 
-    def basic(self, mode):
-        transformList = []
-        transformList.append(transforms.ToTensor())
-        if self.normalize is not None:
-            transformList.append(self.normalize)
-        transformSequence = transforms.Compose(transformList)
-
-        return transformSequence
-
-    def _basic_crop(self, transCrop, mode="train"):
-        transformList = []
-        if mode == "train":
-            transformList.append(transforms.RandomCrop(transCrop))
+    def __call__(self, img):
+        if random.uniform(0, 1) < self.p:
+            img = np.array(img)
+            h, w, c = img.shape
+            N = self.amplitude * np.random.normal(loc=self.mean, scale=self.variance, size=(h, w, 1))
+            N = np.repeat(N, c, axis=2)
+            img = N + img
+            img[img > 255] = 255                       
+            img = Image.fromarray(img.astype('uint8')).convert('RGB')
+            return img
         else:
-            transformList.append(transforms.CenterCrop(transCrop))
-        transformList.append(transforms.ToTensor())
-        if self.normalize is not None:
-            transformList.append(self.normalize)
-        transformSequence = transforms.Compose(transformList)
+            return img
 
-        return transformSequence
 
-    def basic_crop_224(self, mode):
-        transCrop = 224
-        return self._basic_crop(transCrop, mode)
-
-    def _basic_resize(self, size, mode="train"):
-        transformList = []
-        transformList.append(transforms.Resize(size))
-        transformList.append(transforms.ToTensor())
-        if self.normalize is not None:
-            transformList.append(self.normalize)
-        transformSequence = transforms.Compose(transformList)
-
-        return transformSequence
-
-    def basic_resize_224(self, mode):
-        size = 224
-        return self._basic_resize(size, mode)
-
-    def _basic_crop_rot(self, transCrop, mode="train"):
-        transformList = []
-        if mode == "train":
-            transformList.append(transforms.RandomCrop(transCrop))
-            transformList.append(transforms.RandomRotation(7))
-        else:
-            transformList.append(transforms.CenterCrop(transCrop))
-
-        transformList.append(transforms.ToTensor())
-        if self.normalize is not None:
-            transformList.append(self.normalize)
-        transformSequence = transforms.Compose(transformList)
-
-        return transformSequence
-
-    def basic_crop_rot_224(self, mode):
-        transCrop = 224
-        return self._basic_crop_rot(transCrop, mode)
-
-    def _full(self, transCrop, transResize, mode="train"):
-        transformList = []
-        if mode == "train":
-            transformList.append(transforms.RandomResizedCrop(transCrop))
-            transformList.append(transforms.RandomHorizontalFlip())
-            transformList.append(transforms.RandomRotation(7))
-            transformList.append(transforms.ToTensor())
-            if self.normalize is not None:
-                transformList.append(self.normalize)
-        elif mode == "valid":
-            transformList.append(transforms.Resize(transResize))
-            transformList.append(transforms.CenterCrop(transCrop))
-            transformList.append(transforms.ToTensor())
-            if self.normalize is not None:
-                transformList.append(self.normalize)
-        elif mode == "test":
-            transformList.append(transforms.Resize(transResize))
-            transformList.append(transforms.TenCrop(transCrop))
-            transformList.append(
-                transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])))
-            if self.normalize is not None:
-                transformList.append(transforms.Lambda(
-                    lambda crops: torch.stack([self.normalize(crop) for crop in crops])))
-        elif mode == "mytest":
-            transResize = 280
-            transCrop = 256
-
-            transformList.append(transforms.Resize(transResize))
-            transformList.append(transforms.TenCrop(transCrop))
-            transformList.append(
-                transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])))
-            if self.normalize is not None:
-                transformList.append(transforms.Lambda(
-                    lambda crops: torch.stack([self.normalize(crop) for crop in crops])))
-        transformSequence = transforms.Compose(transformList)
-
-        return transformSequence
-
-    def full_224(self, mode):
-        transCrop = 224
-        transResize = 256
-
-        # transResize=224
-        return self._full(transCrop, transResize, mode)
-
-    def full_448(self, mode):
-        transCrop = 448
-        transResize = 512
-        return self._full(transCrop, transResize, mode)
-
-    def _full_colorjitter(self, transCrop, transResize, mode="train"):
-        transformList = []
-        if mode == "train":
-            transformList.append(transforms.RandomResizedCrop(transCrop))
-            transformList.append(transforms.RandomHorizontalFlip())
-            transformList.append(transforms.RandomRotation(7))
-            transformList.append(transforms.ColorJitter(
-                brightness=0.4, contrast=0.4, saturation=0.4))
-            transformList.append(transforms.ToTensor())
-            if self.normalize is not None:
-                transformList.append(self.normalize)
-        elif mode == "valid":
-            transformList.append(transforms.Resize(transResize))
-            transformList.append(transforms.CenterCrop(transCrop))
-            transformList.append(transforms.ToTensor())
-            if self.normalize is not None:
-                transformList.append(self.normalize)
-        elif mode == "test":
-            transformList.append(transforms.Resize(transResize))
-            transformList.append(transforms.TenCrop(transCrop))
-            transformList.append(
-                transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])))
-            if self.normalize is not None:
-                transformList.append(transforms.Lambda(
-                    lambda crops: torch.stack([self.normalize(crop) for crop in crops])))
-
-        transformSequence = transforms.Compose(transformList)
-
-        return transformSequence
-
-    def full_colorjitter_224(self, mode):
-        transCrop = 224
-        transResize = 256
-        return self._full_colorjitter(transCrop, transResize, mode)
+class Augmentation:
+    # weak augumentation
+    transforms = torchvision.transforms.Compose([
+        torchvision.transforms.RandomHorizontalFlip(),
+        torchvision.transforms.RandomRotation(10),
+        torchvision.transforms.Resize(256),
+        AddPepperNoise(snr=0.9, p=0.1),
+        AddGaussianNoise(p=0.3),
+        torchvision.transforms.CenterCrop(256),
+        torchvision.transforms.ToTensor(),
+        normalize
+    ])
+    # strong augumentation
+    transforms_consistency = torchvision.transforms.Compose([
+        torchvision.transforms.RandomHorizontalFlip(),
+        torchvision.transforms.RandomRotation(15),
+        torchvision.transforms.Resize(256),
+        torchvision.transforms.CenterCrop(256),
+        AddPepperNoise(snr=0.7, p=0.5),
+        AddGaussianNoise(p=0.5),
+        torchvision.transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
+        torchvision.transforms.ToTensor(),
+        normalize,
+        torchvision.transforms.RandomErasing()
+    ])
