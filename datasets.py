@@ -15,7 +15,6 @@ from torch import FloatTensor
 
 
 
-
 class COVIDX(Dataset):
     def __init__(self, img_path:str, file_path:str, augment:transforms, extra_num_class:int, select_num:int=30000)->None:
         """ COVIDx dataset
@@ -135,7 +134,6 @@ class Assemble(Dataset):
             image2 = self.augments[1](image2)
 
         return image1, imageLabel, self.source[index], image2
-
 
 
     def __len__(self):
