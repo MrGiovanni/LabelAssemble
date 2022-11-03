@@ -157,8 +157,8 @@ class Assemble(Dataset):
 
         # return self.img_label[idx].index(1)
 
-if __name__ == '__main__':
-    assemble = Assemble(['/home/PJLAB/zhuzengle/workstation/Assemble/dataset', '/home/PJLAB/zhuzengle/workstation/Assemble/images/images/train'], 
-    ['/home/PJLAB/zhuzengle/workstation/Assemble/dataset/train.txt', '/home/PJLAB/zhuzengle/workstation/Assemble/images/train.txt'], augments=[None, None],
-    covidx_ratio=1, chest_ratio=0, label_assembles=['Edema'], num_class=3)
-    print(len(assemble.img_list), len(assemble.img_label))
+# if __name__ == '__main__':
+#     assemble = Assemble(['/home/PJLAB/zhuzengle/workstation/Assemble/dataset', '/home/PJLAB/zhuzengle/workstation/Assemble/images/images/train'], 
+#     ['/home/PJLAB/zhuzengle/workstation/Assemble/dataset/train.txt', '/home/PJLAB/zhuzengle/workstation/Assemble/images/train.txt'], augments=[None, None],
+#     covidx_ratio=1, chest_ratio=0, label_assembles=['Edema'], num_class=3)
+#     print(len(assemble.img_list), len(assemble.img_label))

@@ -11,6 +11,7 @@ import torchvision.transforms
 import torch.nn.functional as F
 from sklearn.metrics import confusion_matrix, recall_score, accuracy_score, precision_score
 from noise import *
+from aug import *
 import os
 from utils import *
 
@@ -87,35 +88,11 @@ def train():
     normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                  std=[0.229, 0.224, 0.225])
 
-    # weak augumentation
-    transforms = torchvision.transforms.Compose([
-        torchvision.transforms.RandomHorizontalFlip(),
-        torchvision.transforms.RandomRotation(10),
-        torchvision.transforms.Resize(256),
-        AddPepperNoise(snr=0.9, p=0.1),
-        AddGaussianNoise(p=0.3),
-        torchvision.transforms.CenterCrop(256),
-        torchvision.transforms.ToTensor(),
-        normalize
-    ])
 
-    # strong augumentation
-    transforms_consistency = torchvision.transforms.Compose([
-        torchvision.transforms.RandomHorizontalFlip(),
-        torchvision.transforms.RandomRotation(15),
-        torchvision.transforms.Resize(256),
-        torchvision.transforms.CenterCrop(256),
-        AddPepperNoise(snr=0.7, p=0.5),
-        AddGaussianNoise(p=0.5),
-        torchvision.transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
-        torchvision.transforms.ToTensor(),
-        normalize,
-        torchvision.transforms.RandomErasing()
-    ])
-
+    weak_aug, strong_aug = aug.transforms, aug.transforms_consistency
     if args.datasetType == 'assemble':
         trainset = datasets.Assemble([args.covidxTrainImagePath, args.chestImagePath], 
-    [args.covidxTrainFilePath, args.chestFilePath], augments=[transforms, transforms_consistency],
+    [args.covidxTrainFilePath, args.chestFilePath], augments=[weak_aug, strong_aug],
     covidx_ratio=args.covidxRatio, chest_ratio=args.chestRatio, 
     label_assembles=['Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule','Pneumonia', 'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'], num_class=args.numClass)
     elif args.datasetType == 'covidx':
@@ -155,11 +132,7 @@ def train():
             if args.datasetType == 'assemble':
                 loss = torch.tensor(0.).cuda()
                 loss_consistency=torch.tensor(0.).cuda()
-                loss_pseudo = torch.tensor(0.).cuda()
-                # for i1 in range(len(img)):
-                #     for i2 in range(args.num_class):
-                #         if output[i1][i2]>0.7 and ((source[i1]==0 and i2 in [1,2]) or (source[i1]==1 and i2 in [18, 19])):
-                
+                loss_pseudo = torch.tensor(0.).cuda()            
                 for i1 in range(len(img)):
                     for i2 in range(0, args.numClass):
                         if source[i1] == 0:
