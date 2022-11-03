@@ -1,38 +1,52 @@
 from torch.nn import BCELoss
 import torch
+from torch import FloatTensor
 class Loss:
-    def __init__(self, loss_choices:list=['bce'])->None:
+    def __init__(self, threshold=0.5, temperature=4.0, loss_choices:list=['bce'])->None:
+        """Calculate the loss, including BCE loss, Consistency loss and Pseudo loss
+
+        Args:
+            threshold (float, optional): Defaults to 0.5.
+            temperature (float, optional): Defaults to 4.0.
+            loss_choices (list, optional): Defaults to ['bce'].
+        """        
         self.loss_choices = loss_choices
         self.criterion = BCELoss().cuda()
+        self.temperature = temperature
+        self.threshold = threshold
+        self.out_sharp = []
+        
 
-                loss_consistency=torch.tensor(0.).cuda()
-                loss_pseudo = torch.tensor(0.).cuda()    
+    def cal_loss(self, output:FloatTensor, output_consistency:FloatTensor, label:FloatTensor, source:list)->FloatTensor:
+        """caculate loss function
 
-    def bce_loss(self, output, label, source):
+        Args:
+            output (FloatTensor): model output
+            label (FloatTensor): ground truth
+            source (list): data source
+
+        Returns:
+            FloatTensor: BCE loss 
+        """        
         batch, num_class = output.shape
         loss = torch.tensor(0.).cuda()
+        consistency_loss = torch.tensor(0.).cuda()
+        pseudo_loss = torch.tensor(0.).cuda()   
         for b in range(batch):
             for c in range(num_class):
                 if source[b] == 0
                     loss += self.criterion(output[b][c], label[b][c])
                 elif source[b] == 1:
                     loss += self.criterion(output[b][c], label[b][c])
-                
-                if output[b][c] > 0.5:
-                    tmp = output[b][c]+(1-output[b][c])/4.0
+                if output[b][c] > self.threshold:
+                    out_sharp = output[b][c] + (1 - output[b][c]) / self.temperature
                 else:
-                    tmp = output[b][c] - output[b][c] / 4.0
+                    out_sharp = output[b][c] - output[b][c] / self.temperature
+                pseudo_loss += F.mse_loss(output[b][c], out_sharp).cuda()
+                consistency_loss += F.mse_loss(output_consistency[b][c], out_sharp).cuda()
 
-    def consistency_loss(self):
-        pass
-
-    def pseudo_loss(self):
-        pass
-
-    def cal_loss(self, output, label):
-        loss = self.BCELoss()
         if 'consistency_loss' in loss_choices:
-            loss += self.consistency_loss()
+            loss += consistency_loss
         if 'pseudo_loss' in loss_choices:
-            loss += self.pseudo_loss()
+            loss += pseudo_loss
         return loss

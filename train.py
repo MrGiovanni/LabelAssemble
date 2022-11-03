@@ -14,6 +14,7 @@ from noise import *
 from aug import *
 import os
 from utils import *
+from loss import Loss
 
 
 def get_arguments():
@@ -33,6 +34,7 @@ def get_arguments():
     parser.add_argument("--covidxRatio", type=float, default=1)
     parser.add_argument("--chestRatio", type=float, default=1)
     parser.add_argument("--saveDir", type=str)
+    # temperature 
     return parser
 
 
