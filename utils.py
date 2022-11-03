@@ -2,7 +2,7 @@ import torch
 import torchvision.transforms
 import numpy as np
 from sklearn.metrics._ranking import roc_auc_score
-
+from random import shuffle
 
 class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
     """Samples elements randomly from a given list of indices for imbalanced dataset
@@ -59,14 +59,30 @@ class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
         return self.num_samples
 
 
+def sample(img_list:list, img_label:list, source:list, select_num:int)->list:
+    """sample from the whole dataset
 
-def computeAUROC(dataGT, dataPRED, classCount):
-    outAUROC = []
-    dataGT = np.array(dataGT)
-    dataPRED = np.array(dataPRED)
-    for i in range(classCount):
-        try:
-            outAUROC.append(roc_auc_score(dataGT[:, i], dataPRED[:, i]))
-        except:
-            outAUROC.append(0.)
-    return outAUROC
+    Args:
+        img_list (list): image list
+        img_label (list): image label
+        source (list): dataset source
+        select_num (int): the number of images to be trained
+
+    Returns:
+        list: [sample_img_list, sample_img_label, sample_source]
+    """    
+    sample_img_list = []
+    sample_source = []
+    sample_img_label = []
+
+    total = len(img_list)
+    index = list(range(len(img_list)))
+    shuffle(index)
+
+    for i, idx in enumerate(index):
+        if i  >= select_num:
+            break
+        sample_img_list.append(img_list[idx])
+        sample_source.append(source[idx])
+        sample_img_label.append(img_label[idx])
+    return [sample_img_list, sample_img_label, sample_source]

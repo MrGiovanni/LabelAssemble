@@ -10,54 +10,45 @@ from random import sample
 from torchvision import transforms
 import torchvision
 from random import shuffle
+from utils import sample
+
+
+
+
 
 class COVIDX(Dataset):
-    def __init__(self, img_path, file_path, augment, num_class, ratio=1):
+    def __init__(self, img_path:str, file_path:str, augment:transforms, extra_num_class:int, select_num:int=30000)->None:
+        """ COVIDx dataset
+        Args:
+            img_path (str): the path of the image files
+            file_path (str): the path of the train/test file list
+            augment (transforms): augumentation
+            extra_num_class (int): Label-Assemble classes nums
+            select_num (int, optional): nums of images involved in training. Defaults to 30000.
+        """        
+        
         self.img_list = []
         self.img_label = []
         self.augment = augment
-        self.num_class = num_class
         self.source = []
         with open(file_path, "r") as fileDescriptor:
-            line = True
-            while line:
-                line = fileDescriptor.readline()
-                if line:
-                    lineItems = line.split()
-                    imagePath = os.path.join(img_path, lineItems[1])
-                    self.img_list.append(imagePath)
-                    imageLabel = [0, ] * num_class
-                    if lineItems[2] == 'positive':
-                        imageLabel = [1, ] + [0, ] * num_class
-                        # self.img_label.append(1)
-                    else:
-                        imageLabel = [0,] + [0, ] * num_class
-                        # self.img_label.append(0)
-                    self.img_label.append(imageLabel)
-
-                    self.source.append(0)
+            lines = fileDescriptor.readlines()
+        for line in lines:
+            line = line.strip()
+            lineItems = line.split()
+            imagePath = os.path.join(img_path, lineItems[1])
+            self.img_list.append(imagePath)
+            if lineItems[2] == 'positive':
+                imageLabel = [1, ] + [0, ] * extra_num_class
+            else:
+                imageLabel = [0,] + [0, ] * extra_num_class
+            self.img_label.append(imageLabel)
+            self.source.append(0)
+        # sample from dataset
+        self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, select_num)
         
-        img_list = []
-        source = []
-        img_label = []
-
-
-        total = len(self.img_list)
-        index = list(range(len(self.source)))
-        shuffle(index)
-        for i, idx in enumerate(index):
-            if i / total > ratio:
-                break
-            img_list.append(self.img_list[idx])
-            source.append(self.source[idx])
-            img_label.append(self.img_label[idx])
-        
-        self.img_list = img_list
-        self.source = source
-        self.img_label = img_label
-        
-
-    def __getitem__(self, index):
+    
+    def __getitem__(self, index:int)->Tensor, list, int:
         imagePath = self.img_list[index]
         imageData = Image.open(imagePath).convert('RGB')
         imageLabel = torch.FloatTensor(self.img_label[index])
@@ -65,10 +56,10 @@ class COVIDX(Dataset):
             imageData = self.augment(imageData)
         return imageData, imageLabel, 0
 
-    def __len__(self):
+    def __len__(self)->int:
         return len(self.img_list)
-    def get_labels(self, idx):
-        
+
+    def get_labels(self, idx:int)->int:
         return self.img_label[idx].index(1)
 
 
@@ -77,8 +68,15 @@ class COVIDX(Dataset):
 
 class ChestXRay14(Dataset):
 
-    def __init__(self, img_path, file_path, augment, num_class, label_assembles, ratio=1):
-
+    def __init__(self, img_path:str, file_path:str, augment:transforms, label_assembles:list, select_num=110000)->None:
+        """ ChestXRay14 dataset
+        Args:
+            img_path (str): the path of the image files
+            file_path (str): the path of the train/test file list
+            augment (transforms): augumentation
+            label_assembles (list): Label-Assemble classes
+            select_num (int, optional): nums of images involved in training. Defaults to 110000.
+        """        
         self.img_list = []
         self.img_label = []
         self.augment = augment
@@ -91,72 +89,45 @@ class ChestXRay14(Dataset):
 
         label_assembles_mappings = [self.label_mappings[label_assemble] for label_assemble in label_assembles]
         with open(file_path, "r") as fileDescriptor:
-            line = True
-            while line:
-                line = fileDescriptor.readline()
-                if line:
-                    lineItems = line.split()
-                    imagePath = os.path.join(img_path, lineItems[0])
-                    imageLabelTotal = lineItems[1:]
-                    imageLabelTotal = [int(i) for i in imageLabelTotal]
-                    # input(len(imageLabelTotal))
-                    imageLabel = [imageLabelTotal[label_assemble_mapping] for label_assemble_mapping in label_assembles_mappings]
-                    imageLabel = [0, ] + imageLabel                
-                    self.img_list.append(imagePath)
-                    self.img_label.append(imageLabel)
-                    self.source.append(1)
+            lines = fileDescriptor.readlines()
+        for line in lines:
+            line = line.strip()
+            lineItems = line.split()
+            imagePath = os.path.join(img_path, lineItems[0])
+            imageLabelTotal = [int(i) for i in lineItems[1:]]
+            imageLabel = [0, ] + [imageLabelTotal[label_assemble_mapping] for label_assemble_mapping in label_assembles_mappings]            
+            self.img_list.append(imagePath)
+            self.img_label.append(imageLabel)
+            self.source.append(1)
         
-        img_list = []
-        source = []
-        img_label =[]
-        total = len(self.img_list)
-        index = list(range(len(self.source)))
-        shuffle(index)
-        for i, idx in enumerate(index):
-            if i / total > ratio:
-                break
-            img_list.append(self.img_list[idx])
-            source.append(self.source[idx])
-            img_label.append(self.img_label[idx])
-        self.img_list = img_list
-        self.img_label = img_label
-        self.source = source
+        self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, select_num)
         
 
-    def __getitem__(self, index):
-
+    def __getitem__(self, index:int)->torch.Tensor, list, int:
         imagePath = self.img_list[index]
-
         imageData = Image.open(imagePath).convert('RGB')
         imageLabel = torch.FloatTensor(self.img_label[index])
-
         if self.augment != None:
             imageData = self.augment(imageData)
-
         return imageData, imageLabel, 0
 
-    def __len__(self):
-
+    def __len__(self)->int:
         return len(self.img_list)
 
 
 class Assemble(Dataset):
-    def __init__(self, img_paths, file_paths, augments, label_assembles, num_class, covidx_ratio=1, chest_ratio=1):
-
-        cxr3 = COVIDX(img_paths[0], file_paths[0], augments[0], num_class=num_class, ratio=covidx_ratio)
-        chexpert_ray14 = ChestXRay14(img_paths[1], file_paths[1], augments[0], num_class=num_class, label_assembles=label_assembles, ratio=chest_ratio)
-
-        self.img_list = cxr3.img_list + chexpert_ray14.img_list
-        self.img_label = cxr3.img_label + chexpert_ray14.img_label
-        self.source = cxr3.source + chexpert_ray14.source
+    def __init__(self, img_paths:list, file_paths:list, augments:list, label_assembles:list, covidx_num:int, chest_num:int)->None:
+        covidx = COVIDX(img_paths[0], file_paths[0], None, extra_class=len(label_assembles), select_num=covidx_num)
+        chestxray14 = ChestXRay14(img_paths[1], file_paths[1], None, label_assembles=label_assembles, select_num=chest_num)
+        self.img_list = covidx.img_list + chestxray14.img_list
+        self.img_label = covidx.img_label + chestxray14.img_label
+        self.source = covidx.source + chestxray14.source
         self.augments = augments
 
 
     def __getitem__(self, index):
 
         imagePath = self.img_list[index]
-
-
         image1 = Image.open(imagePath).convert('RGB')
         image2 = Image.open(imagePath).convert('RGB')
         imageLabel = torch.FloatTensor(self.img_label[index])

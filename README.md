@@ -33,7 +33,6 @@ arXiv preprint arXiv:2109.12265, 2021 <br/>
 ### 1. Clone the repository
 ```bash
 $ git clone https://github.com/MrGiovanni/LabelAssemble.git
-$ pip install -r requirements.txt
 ```
 
 ### 2. Prepare the datasets
@@ -47,7 +46,7 @@ When you have the dataset ready, you can train the model.
 $ bash run.sh
 ```
 Then you can reproduce our experiments.
-
+Note that you should change the parameters.
 
 ## Train models from your own data
 

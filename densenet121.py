@@ -222,16 +222,12 @@ class DenseNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
-
         features = self.features(x)
         #print(features.shape)
         out = F.relu(features, inplace=True)
         out = F.adaptive_avg_pool2d(out, (1, 1))
         out = torch.flatten(out, 1)
         fea=out
-
-
-
         out=self.classifier_me2(out)
         out=out.sigmoid()
         return out, fea
