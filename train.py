@@ -11,15 +11,14 @@ from aug import *
 import os
 from utils import *
 from logger import Logger
+from config import device
+
 # from loss import Loss
-
-
 
 
 
 def train(args):
     # avoid rewrite pth file
-    
     assert not os.path.exists(args.saveDir), 'This directory has already been created!'
     os.makedirs(args.saveDir, exist_ok=False)
     logger = Logger()
@@ -52,42 +51,46 @@ def train(args):
     ])
     
     if args.datasetType == 'assemble':
-        logger.info('Label training')
+        logger.info('Label Assemble')
+        covidx = datasets.COVIDX(img_path=args.covidxTrainImagePath,
+                    file_path=args.covidxTrainFilePath,
+                    augment=None,
+                    extra_num_class=args.extraNumClass,
+                    select_num=args.covidxNum)
+        chestxray14 = datasets.ChestXRay14(img_path=args.chestImagePath,
+                    file_path=args.chestFilePath,
+                    augment=None,
+                    label_assembles=['Pneumonia'],
+                    select_num=args.chestNum)
+        train_set = datasets.Assemble([covidx, chestxray14], augments=[weak_aug, strong_aug])
 
-
-    #     trainset = datasets.Assemble([args.covidxTrainImagePath, args.chestImagePath], 
-    # [args.covidxTrainFilePath, args.chestFilePath], augments=[weak_aug, strong_aug],
-    # covidx_ratio=args.covidxRatio, chest_ratio=args.chestRatio, 
-    # label_assembles=['Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule','Pneumonia', 'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'], num_class=args.numClass)
-    
-    
     
     elif args.datasetType == 'covidx':
-        # TODO: implement this part
-        pass
+        logger.info('COVIDx')
+        train_set = datasets.COVIDX(img_path=args.covidxTrainImagePath,
+                    file_path=args.covidxTrainFilePath,
+                    augment=None,
+                    extra_num_class=args.extraNumClass,
+                    select_num=args.covidxNum)
+
     else:
         raise ValueError("No such dataset type: %s" % args.datasetType)
     
-        # dataloader=torch.utils.data.DataLoader(trainset, batch_size=32, shuffle=True, num_workers=12, pin_memory=True)
+    dataloader = torch.utils.data.DataLoader(train_set, batch_size=8, num_workers=12, pin_memory=True)
 
-    dataloader=torch.utils.data.DataLoader(trainset, batch_size=8, num_workers=12, pin_memory=True)
-
-    model = densenet121.densenet121(pretrained=True,num_classes=args.numClass)
+    model = densenet121.densenet121(pretrained=True, num_classes=args.numClass)
     model.train()
-    model = model.cuda()
+    model = model.to(device)
+    optimizer = torch.optim.Adam(lr=args.lr, params=filter(lambda p: p.requires_grad, model.parameters()))
 
-
-    best_auc=-1
-    best_epoch=-1
-    best_auc_full=None
+    best_auc = -1
+    best_epoch = -1
+    best_auc_full = None
 
     lr_count=0
 
-    optimizer = torch.optim.Adam(lr=args.lr, params=filter(lambda p: p.requires_grad, model.parameters()))
-
-
     for i in range(args.epochs):
-        print(f'epoch: {i}/{args.epochs}')
+        logger.info(f'epoch: {i}/{args.epochs}')
         cnt = 0
         for img, label, source, img_consistency in tqdm(dataloader):
 

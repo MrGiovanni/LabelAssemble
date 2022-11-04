@@ -1,0 +1,3 @@
+[2022-11-04  23:41:46.554] logger.py -> info line:58 [INFO] : created work directory in .work_dir/2022_11_04_23_41_46
+[2022-11-04  23:41:46.554] logger.py -> info line:58 [INFO] : Training starts.
+[2022-11-04  23:41:46.555] logger.py -> info line:58 [INFO] : Label Assemble

@@ -1,3 +1,0 @@
-[2022-11-04  21:59:27.155] logger.py -> info line:58 [INFO] : created work directory in .work_dir/2022_11_04_21_59_27
-[2022-11-04  21:59:27.155] logger.py -> info line:58 [INFO] : Training starts.
-[2022-11-04  21:59:27.156] logger.py -> info line:58 [INFO] : Namespace(chestFilePath='all', chestImagePath='all', chestRatio=0.4, covidxRatio=1.0, covidxTestFilePath='all', covidxTestImagePath='all', covidxTrainFilePath='all', covidxTrainImagePath='all', datasetType='assemble', epochs=64, isTrain=True, lr=0.0002, mode='train', numClass=14, resumePath=None, saveDir='.work_dir/2022_11_04_21_59_27/all', testInterval=3, workDir='')

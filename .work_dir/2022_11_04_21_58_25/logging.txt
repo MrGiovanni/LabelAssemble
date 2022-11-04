@@ -1,2 +1,0 @@
-[2022-11-04  21:58:25.366] logger.py -> info line:58 [INFO] : created work directory in .work_dir/2022_11_04_21_58_25
-[2022-11-04  21:58:25.367] logger.py -> info line:58 [INFO] : Training starts.
