@@ -1,15 +1,11 @@
-import argparse
-
 import datasets
 import torch
-from augmentation import Augmentation
 import densenet121
 from tqdm import tqdm
 import numpy as np
-from sklearn.metrics._ranking import roc_auc_score
 import torchvision.transforms
 import torch.nn.functional as F
-from sklearn.metrics import confusion_matrix, recall_score, accuracy_score, precision_score
+# from sklearn.metrics import confusion_matrix, recall_score, accuracy_score, precision_score
 from noise import *
 from aug import *
 import os
@@ -17,31 +13,10 @@ from utils import *
 from loss import Loss
 
 
-def get_arguments():
-    parser = argparse.ArgumentParser(description="Assemble Label")
-    parser.add_argument("--datasetType", type=str, default='assemble')
-    parser.add_argument("--covidxTrainImagePath", type=str)
-    parser.add_argument("--covidxTestImagePath", type=str)
-    parser.add_argument("--chestImagePath", type=str)
-    parser.add_argument('--covidxTrainFilePath', type=str)
-    parser.add_argument('--covidxTestFilePath', type=str)
-    parser.add_argument("--chestFilePath", type=str)
-    parser.add_argument("--numClass", type=int, default=14)
-    parser.add_argument("--mode", type=str, default='train')
-    parser.add_argument("--epochs", type=int, default=64)
-    parser.add_argument("--testInterval", type=int, default=3)
-    parser.add_argument("--lr", type=float, default=2e-4)
-    parser.add_argument("--covidxRatio", type=float, default=1)
-    parser.add_argument("--chestRatio", type=float, default=1)
-    parser.add_argument("--saveDir", type=str)
-    # temperature 
-    return parser
 
 
 
-def train():
-    parser = get_arguments()
-    args = parser.parse_args()
+def train(args):
     # avoid rewrite pth file
     assert not os.path.exists(args.saveDir), 'This directory has already been created!'
     os.makedirs(args.saveDir, exist_ok=False)

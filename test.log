@@ -2,3 +2,16 @@
 [2022-11-03  23:31:58.290] logger.py -> <module> line:54 [WARNING] : warning
 [2022-11-03  23:31:58.290] logger.py -> <module> line:55 [ERROR] : error
 [2022-11-03  23:31:58.290] logger.py -> <module> line:56 [CRITICAL] : critical
+[2022-11-04  11:32:30.554] logger.py -> info line:40 [INFO] : info
+[2022-11-04  11:32:30.555] logger.py -> warning line:43 [WARNING] : warning
+[2022-11-04  11:32:30.555] logger.py -> error line:46 [ERROR] : error
+[2022-11-04  11:32:30.555] logger.py -> critical line:49 [CRITICAL] : critical
+[2022-11-04  11:32:32.539] logger.py -> info line:40 [INFO] : info
+[2022-11-04  11:32:32.539] logger.py -> warning line:43 [WARNING] : warning
+[2022-11-04  11:32:32.539] logger.py -> error line:46 [ERROR] : error
+[2022-11-04  11:32:32.540] logger.py -> critical line:49 [CRITICAL] : critical
+[2022-11-04  11:32:33.279] logger.py -> info line:40 [INFO] : info
+[2022-11-04  11:32:33.279] logger.py -> warning line:43 [WARNING] : warning
+[2022-11-04  11:32:33.279] logger.py -> error line:46 [ERROR] : error
+[2022-11-04  11:32:33.279] logger.py -> critical line:49 [CRITICAL] : critical
+[2022-11-04  13:40:02.005] logger.py -> info line:41 [INFO] : Starting

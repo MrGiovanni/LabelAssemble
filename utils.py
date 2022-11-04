@@ -86,3 +86,5 @@ def sample(img_list:list, img_label:list, source:list, select_num:int)->list:
         sample_source.append(source[idx])
         sample_img_label.append(img_label[idx])
     return [sample_img_list, sample_img_label, sample_source]
+
+

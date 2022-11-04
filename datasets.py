@@ -5,14 +5,14 @@ import os
 import numpy as np
 from imageio import imread
 from PIL import Image
-import random
+
 from random import sample
 from torchvision import transforms
 import torchvision
 from random import shuffle
 from utils import sample
 from torch import FloatTensor
-
+from typing import Union, Tuple, List
 
 
 class COVIDX(Dataset):
@@ -47,7 +47,7 @@ class COVIDX(Dataset):
         self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, select_num)
         
     
-    def __getitem__(self, index:int)->FloatTensor, list, int:
+    def __getitem__(self, index:int)->Tuple[FloatTensor, list, int]:
         imagePath = self.img_list[index]
         imageData = Image.open(imagePath).convert('RGB')
         imageLabel = torch.FloatTensor(self.img_label[index])
@@ -101,7 +101,7 @@ class ChestXRay14(Dataset):
         self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, select_num)
         
 
-    def __getitem__(self, index:int)->torch.Tensor, list, int:
+    def __getitem__(self, index:int)->Tuple[torch.Tensor, list, int]:
         imagePath = self.img_list[index]
         imageData = Image.open(imagePath).convert('RGB')
         imageLabel = torch.FloatTensor(self.img_label[index])

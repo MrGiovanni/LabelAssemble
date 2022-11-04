@@ -10,4 +10,5 @@ python main.py \
 --numClass 14 \
 --mode train \
 --covidxRatio 1 \
+--isTrain True \
 --chestRatio 0.4 --saveDir all 
