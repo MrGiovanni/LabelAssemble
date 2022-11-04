@@ -10,7 +10,8 @@ from noise import *
 from aug import *
 import os
 from utils import *
-from loss import Loss
+from logger import Logger
+# from loss import Loss
 
 
 
@@ -18,19 +19,49 @@ from loss import Loss
 
 def train(args):
     # avoid rewrite pth file
+    
     assert not os.path.exists(args.saveDir), 'This directory has already been created!'
     os.makedirs(args.saveDir, exist_ok=False)
-    
+    logger = Logger()
+
     normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                  std=[0.229, 0.224, 0.225])
 
+    weak_aug = torchvision.transforms.Compose([
+        torchvision.transforms.RandomHorizontalFlip(),
+        torchvision.transforms.RandomRotation(10),
+        torchvision.transforms.Resize(256),
+        AddPepperNoise(snr=0.9, p=0.1),
+        AddGaussianNoise(p=0.3),
+        torchvision.transforms.CenterCrop(256),
+        torchvision.transforms.ToTensor(),
+        normalize
+    ])
 
-    weak_aug, strong_aug = aug.transforms, aug.transforms_consistency
+    strong_aug = torchvision.transforms.Compose([
+        torchvision.transforms.RandomHorizontalFlip(),
+        torchvision.transforms.RandomRotation(15),
+        torchvision.transforms.Resize(256),
+        torchvision.transforms.CenterCrop(256),
+        AddPepperNoise(snr=0.7, p=0.5),
+        AddGaussianNoise(p=0.5),
+        torchvision.transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
+        torchvision.transforms.ToTensor(),
+        normalize,
+        torchvision.transforms.RandomErasing()
+    ])
+    
     if args.datasetType == 'assemble':
-        trainset = datasets.Assemble([args.covidxTrainImagePath, args.chestImagePath], 
-    [args.covidxTrainFilePath, args.chestFilePath], augments=[weak_aug, strong_aug],
-    covidx_ratio=args.covidxRatio, chest_ratio=args.chestRatio, 
-    label_assembles=['Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule','Pneumonia', 'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'], num_class=args.numClass)
+        logger.info('Label training')
+
+
+    #     trainset = datasets.Assemble([args.covidxTrainImagePath, args.chestImagePath], 
+    # [args.covidxTrainFilePath, args.chestFilePath], augments=[weak_aug, strong_aug],
+    # covidx_ratio=args.covidxRatio, chest_ratio=args.chestRatio, 
+    # label_assembles=['Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule','Pneumonia', 'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'], num_class=args.numClass)
+    
+    
+    
     elif args.datasetType == 'covidx':
         # TODO: implement this part
         pass

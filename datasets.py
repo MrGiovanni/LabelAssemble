@@ -1,14 +1,10 @@
-from cProfile import label
 import torch
 from torch.utils.data import Dataset
 import os
-import numpy as np
-from imageio import imread
 from PIL import Image
 
 from random import sample
 from torchvision import transforms
-import torchvision
 from random import shuffle
 from utils import sample
 from torch import FloatTensor
@@ -112,23 +108,29 @@ class ChestXRay14(Dataset):
     def __len__(self)->int:
         return len(self.img_list)
 
-
 class Assemble(Dataset):
-    def __init__(self, img_paths:list, file_paths:list, augments:list, label_assembles:list, covidx_num:int, chest_num:int)->None:
-        covidx = COVIDX(img_paths[0], file_paths[0], None, extra_class=len(label_assembles), select_num=covidx_num)
-        chestxray14 = ChestXRay14(img_paths[1], file_paths[1], None, label_assembles=label_assembles, select_num=chest_num)
-        self.img_list = covidx.img_list + chestxray14.img_list
-        self.img_label = covidx.img_label + chestxray14.img_label
-        self.source = covidx.source + chestxray14.source
+    def __init__(self, datasets:list, augments:list)->None:
+        """Assemble dataset
+
+        Args:
+            datasets (list): Assemble datasets
+            augments (list): Dataset augments
+
+        """
+        self.img_list = []
+        self.img_label = []
+        self.source = []
         self.augments = augments
+        for dataset in datasets:
+            self.img_list.extend(dataset.img_list)
+            self.img_label.extend(dataset.img_label)
+            self.source.extend(dataset.source)
 
-    def __getitem__(self, index):
-
+    def __getitem__(self, index:int)->Tuple[FloatTensor, FloatTensor, int, FloatTensor]:
         imagePath = self.img_list[index]
         image1 = Image.open(imagePath).convert('RGB')
         image2 = Image.open(imagePath).convert('RGB')
         imageLabel = torch.FloatTensor(self.img_label[index])
-
         if self.augments != None:
             image1 = self.augments[0](image1)
             image2 = self.augments[1](image2)
@@ -140,6 +142,7 @@ class Assemble(Dataset):
         return len(self.img_list)
         
     def get_labels(self, idx):
+        # TODO
         if self.source[idx] == 0:
             if self.img_label[idx][0] == 0:
                 return 0
@@ -149,5 +152,24 @@ class Assemble(Dataset):
             if sum(self.img_label[idx]) == 0:
                 return 2
             else:
-                return self.img_label[idx].index(1) + 2
+                return self.img_label[idx].index(1) + 2   
+
+
+
+
+
+if __name__ == '__main__':
+    covidx = COVIDX(img_path='/Users/zenglezhu/code/dataset/COVIDX/train',
+                    file_path='/Users/zenglezhu/code/dataset/COVIDX/train.txt',
+                    augment=None,
+                    extra_num_class=0,
+                    select_num=10000)
+    chest = ChestXRay14(img_path='/Users/zenglezhu/code/dataset/chestxray14/train',
+                    file_path='/Users/zenglezhu/code/dataset/chestxray14/train_official.txt',
+                    augment=None,
+                    label_assembles=['Pneumonia'],
+                    select_num=10000)
+    assemble = Assemble([covidx, chest], None)
+    print(len(assemble.source))
+
 

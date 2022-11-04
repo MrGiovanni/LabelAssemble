@@ -4,7 +4,7 @@ import os
 import datetime 
 import os.path as osp
 from train import train
-from test import test
+# from test import test
 
 
 def get_arguments():
@@ -44,6 +44,7 @@ if __name__ == "__main__":
     os.makedirs(work_dir, exist_ok=True)
     logger = Logger(osp.join(work_dir, 'logging.txt'))
     logger.info('created work directory in %s' % work_dir)
+    args.saveDir = osp.join(work_dir, args.saveDir)
     if args.isTrain:
         logger.info('Training starts.')
         train(args)
