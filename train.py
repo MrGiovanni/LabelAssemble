@@ -94,8 +94,8 @@ def train(args):
         cnt = 0
         for img, label, source, img_consistency in tqdm(dataloader):
 
-            img, label, source, img_consistency=img.cuda(), label.cuda(), source.cuda(), img_consistency.cuda()
-            output, dis_res=model(img)
+            img, label, source, img_consistency=img.to(device), label.to(device), source.to(device), img_consistency.to(device)
+            output, _ = model(img)
             output_consistency,_ = model(img_consistency)
             criterion = Loss()
             if args.datasetType == 'assemble':        
