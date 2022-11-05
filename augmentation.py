@@ -1,4 +1,3 @@
-import torchvision.transforms
 from noise import *
 
 
@@ -47,29 +46,9 @@ class AddGaussianNoise(object):
         else:
             return img
 
-
 class Augmentation:
-    # weak augumentation
-    transforms = torchvision.transforms.Compose([
-        torchvision.transforms.RandomHorizontalFlip(),
-        torchvision.transforms.RandomRotation(10),
-        torchvision.transforms.Resize(256),
-        AddPepperNoise(snr=0.9, p=0.1),
-        AddGaussianNoise(p=0.3),
-        torchvision.transforms.CenterCrop(256),
-        torchvision.transforms.ToTensor(),
-        normalize
-    ])
-    # strong augumentation
-    transforms_consistency = torchvision.transforms.Compose([
-        torchvision.transforms.RandomHorizontalFlip(),
-        torchvision.transforms.RandomRotation(15),
-        torchvision.transforms.Resize(256),
-        torchvision.transforms.CenterCrop(256),
-        AddPepperNoise(snr=0.7, p=0.5),
-        AddGaussianNoise(p=0.5),
-        torchvision.transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
-        torchvision.transforms.ToTensor(),
-        normalize,
-        torchvision.transforms.RandomErasing()
-    ])
+    def __init__(self, config):
+
+
+
+

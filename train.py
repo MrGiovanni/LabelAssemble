@@ -10,6 +10,7 @@ from noise import *
 from aug import *
 import os
 from utils import *
+from loss import FullyLoss, SemiLoss
 from logger import Logger
 from config import device
 
@@ -97,10 +98,10 @@ def train(args):
             img, label, source, img_consistency=img.to(device), label.to(device), source.to(device), img_consistency.to(device)
             output, _ = model(img)
             output_consistency,_ = model(img_consistency)
-            criterion = Loss()
+            criterion = FullyLoss()
             if args.datasetType == 'assemble':        
-                loss = criterion.cal_loss(output, output_consistency, label, source)
-                loss=loss/len(img)
+                loss = criterion(output, label, source)
+                # loss=loss/len(img)
 
 
             optimizer.zero_grad()

@@ -35,11 +35,11 @@ class Logger:
         self.console_handler.setLevel(logging.DEBUG)
         self.file_handler.setLevel(logging.INFO)
         self.file_formatter = logging.Formatter(
-            fmt='[%(asctime)s.%(msecs)03d] %(filename)s -> %(funcName)s line:%(lineno)d [%(levelname)s] : %(message)s',
+            fmt='[%(asctime)s.%(msecs)03d] -> [%(levelname)s] : %(message)s',
             datefmt='%Y-%m-%d  %H:%M:%S'
         )
         self.console_formatter = colorlog.ColoredFormatter(
-            fmt='%(log_color)s[%(asctime)s.%(msecs)03d] %(filename)s -> %(funcName)s line:%(lineno)d [%(levelname)s] : %(message)s',
+            fmt='%(log_color)s[%(asctime)s.%(msecs)03d] -> [%(levelname)s] : %(message)s',
             datefmt='%Y-%m-%d  %H:%M:%S',
             log_colors=self.log_colors_config
         )
@@ -66,7 +66,3 @@ class Logger:
     def critical(self, message:str)->None:
         self.logger.critical(message)
 
-
-if __name__ == '__main__':
-    logger = Logger('test.log')
-    logger.info('Starting')
