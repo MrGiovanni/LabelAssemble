@@ -21,7 +21,6 @@ class COVIDX(Dataset):
             extra_num_class (int): Label-Assemble classes nums
             select_num (int, optional): nums of images involved in training. Defaults to 30000.
         """        
-        
         self.img_list = []
         self.img_label = []
         self.augment = augment

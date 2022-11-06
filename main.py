@@ -24,10 +24,13 @@ def get_arguments():
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--covidxNum", type=int, default=1)
     parser.add_argument("--chestNum", type=int, default=1)
+    parser.add_argument("--numWorkers", type=int, default=32)
+    parser.add_argument("--batchSize", type=int, default=1)
     parser.add_argument("--saveDir", type=str)
     parser.add_argument("--isTrain", type=bool, default=True)
     parser.add_argument("--resumePath", type=str)
     parser.add_argument("--workDir", type=str, default='')
+    parser.add_argument("--loss", type=str, default='fully')
     # temperature 
     return parser
 

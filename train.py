@@ -2,10 +2,8 @@ import datasets
 import torch
 import densenet121
 from tqdm import tqdm
-import numpy as np
 import torchvision.transforms
 import torch.nn.functional as F
-# from sklearn.metrics import confusion_matrix, recall_score, accuracy_score, precision_score
 from noise import *
 from aug import *
 import os
@@ -13,6 +11,7 @@ from utils import *
 from loss import FullyLoss, SemiLoss
 from logger import Logger
 from config import device
+from test import test
 
 # from loss import Loss
 
@@ -23,6 +22,7 @@ def train(args):
     assert not os.path.exists(args.saveDir), 'This directory has already been created!'
     os.makedirs(args.saveDir, exist_ok=False)
     logger = Logger()
+
 
     normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                  std=[0.229, 0.224, 0.225])
@@ -77,7 +77,7 @@ def train(args):
     else:
         raise ValueError("No such dataset type: %s" % args.datasetType)
     
-    dataloader = torch.utils.data.DataLoader(train_set, batch_size=8, num_workers=12, pin_memory=True)
+    dataloader = torch.utils.data.DataLoader(train_set, batch_size=args.batchSize, num_workers=args.numWorkers, pin_memory=True)
 
     model = densenet121.densenet121(pretrained=True, num_classes=args.numClass)
     model.train()
@@ -94,22 +94,19 @@ def train(args):
         logger.info(f'epoch: {i}/{args.epochs}')
         cnt = 0
         for img, label, source, img_consistency in tqdm(dataloader):
-
             img, label, source, img_consistency=img.to(device), label.to(device), source.to(device), img_consistency.to(device)
             output, _ = model(img)
-            output_consistency,_ = model(img_consistency)
+            output_consistency, _ = model(img_consistency)
             criterion = FullyLoss()
             if args.datasetType == 'assemble':        
                 loss = criterion(output, label, source)
-                # loss=loss/len(img)
-
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
         torch.save(model,os.path.join(args.saveDir, 'epoch_%d' %i))
-        if i%args.testInterval==0:
+        if i % args.testInterval==0:
             if args.datasetType=='assemble':
                 auc,auc_full=test(model, args)
                 if auc>best_auc:

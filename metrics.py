@@ -1,5 +1,8 @@
 import numpy as np
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, confusion_matrix
+import scipy.stats as st
+from utils import *
+
 
 
 def compute_roc_auc(gt:list, pred:list, class_num:int)->list:
@@ -24,3 +27,36 @@ def compute_roc_auc(gt:list, pred:list, class_num:int)->list:
     return auc_roc_scores
 
 
+
+
+# def compute_p_value(metrics, ):
+#     for metric_name in metrics.keys():
+#      _, p_value = st.ttest_1samp(metrics[metric_name], 0.9625)
+#     (p_value)
+#     pass
+
+def compute_conf(gt, pred, threshold:int=0.5, sample_time:int=100, sample_ratio:int=0.5)->dict:
+    def sampling_dataset(gt, predict):
+        metrics = {'accuracy': [], 'recall': [], 'specificity': []}
+
+        for _ in (range(sample_time)):
+            rand_index = sample([i for i in range(len(gt))], int(sample_ratio*len(gt)))
+            tn, fp, fn, tp = confusion_matrix(gt[rand_index], predict[rand_index]>threshold).ravel()
+            metrics['recall'].append(tp/(tp+fn))
+            metrics['specificity'].append(tn/(tn+fp))
+            metrics['accuracy'].append((tp + tn) / (tp + tn + fp + fn))
+        return metrics
+    metrics = sampling_dataset(gt, pred)
+    results = {}
+    for metric_name in metrics.keys():
+        lower, upper = st.t.interval(alpha=0.95, df=len(metrics[metric_name])-1, 
+                                    loc=np.mean(metrics[metric_name]), 
+                                    scale=st.sem(metrics[metric_name])) 
+        results[metric_name] = [metrics[metric_name]*100, lower*100, upper*100]
+    
+    return results
+        # print('{} = {:.1f} [95% CI: {:.1f}-{:.1f}]'.format(metric_name,
+        #                                                 np.mean(metrics[metric_name])*100,
+        #                                                 lower*100,
+        #                                                 upper*100,
+        #                                                 ))
