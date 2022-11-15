@@ -1,4 +1,0 @@
-[2022-11-05  10:04:57.350] logger.py -> info line:58 [INFO] : created work directory in .work_dir/2022_11_05_10_04_57
-[2022-11-05  10:04:57.350] logger.py -> info line:58 [INFO] : Training starts.
-[2022-11-05  10:04:57.351] logger.py -> info line:58 [INFO] : Label Assemble
-[2022-11-05  10:04:57.930] logger.py -> info line:58 [INFO] : epoch: 0/64

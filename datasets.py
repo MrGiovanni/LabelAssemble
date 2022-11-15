@@ -9,7 +9,8 @@ from random import shuffle
 from utils import sample
 from torch import FloatTensor
 from typing import Union, Tuple, List
-
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class COVIDX(Dataset):
     def __init__(self, img_path:str, file_path:str, augment:transforms, extra_num_class:int, select_num:int=30000)->None:

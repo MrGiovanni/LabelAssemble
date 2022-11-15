@@ -1,1 +1,1 @@
-device = 'cpu'
+device = 'cuda'

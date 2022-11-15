@@ -1,5 +1,0 @@
-[2022-11-05  21:32:43.402] -> [INFO] : created work directory in .work_dir/2022_11_05_21_32_43
-[2022-11-05  21:32:43.403] -> [INFO] : Training starts.
-[2022-11-05  21:32:43.403] -> [CRITICAL] : .work_dir/2022_11_05_21_32_43/all
-[2022-11-05  21:32:43.404] -> [INFO] : Label Assemble
-[2022-11-05  21:32:44.109] -> [INFO] : epoch: 0/64

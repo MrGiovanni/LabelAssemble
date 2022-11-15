@@ -1,4 +1,0 @@
-[2022-11-06  00:10:28.331] -> [INFO] : created work directory in .work_dir/2022_11_06_00_10_28
-[2022-11-06  00:10:28.331] -> [INFO] : Training starts.
-[2022-11-06  00:10:28.332] -> [INFO] : Label Assemble
-[2022-11-06  00:10:29.015] -> [INFO] : epoch: 0/1

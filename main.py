@@ -6,7 +6,8 @@ import os.path as osp
 from train import train
 # from test import test
 
-
+import os
+# os.environ['CUDA_VISIBLE_DEVICES']='i'
 def get_arguments():
     parser = argparse.ArgumentParser(description="Assemble Label")
     parser.add_argument("--datasetType", type=str, default='assemble')

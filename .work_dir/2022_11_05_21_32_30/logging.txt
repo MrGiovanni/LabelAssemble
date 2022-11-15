@@ -1,1 +1,0 @@
-[2022-11-05  21:32:30.218] -> [INFO] : created work directory in .work_dir/2022_11_05_21_32_30

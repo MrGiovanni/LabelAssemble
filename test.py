@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from noise import *
 from config import device
 from metrics import *
-
+from logger import Logger
 
 def test(model, args):
 
@@ -18,18 +18,20 @@ def test(model, args):
                                                 torchvision.transforms.CenterCrop(256),
                                                 torchvision.transforms.ToTensor(),
                                                 normalize])
+    logger = Logger()
     
     test_set = datasets.COVIDX(img_path=args.covidxTestImagePath,
                     file_path=args.covidxTestFilePath,
                     augment=None,
                     extra_num_class=args.extraNumClass,
-                    select_num=args.covidxNum)
-    dataloader = torch.utils.data.DataLoader(test_set, batch_size=8, shuffle=True, num_workers=12, pin_memory=True)
+                    select_num=400)
+
+    dataloader = torch.utils.data.DataLoader(test_set, batch_size=args.batchSize, shuffle=True, num_workers=12, pin_memory=True)
 
     predict = []
     target = []
     model.eval()
-    print(f'test now')
+    logger.info('Testing starts!')
 
     for inputs, labels, _ in tqdm(dataloader):
         inputs = inputs.to(device)
@@ -41,10 +43,7 @@ def test(model, args):
     predict = torch.cat(predict, dim=0).cpu().numpy()
     target = torch.cat(target, dim=0).cpu().numpy()
     auc = compute_roc_auc(target, predict, args.numClass)
-    print(f'\n {auc}  avg_auc: {np.average(auc)} \n')
-    # print(predict[:10, :])
-    # input(666)
-
+    logger.info(f'\n {auc}  avg_auc: {np.average(auc)} \n')
     return np.average(auc), auc
 
 
