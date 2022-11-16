@@ -22,7 +22,7 @@ def test(model, args):
     
     test_set = datasets.COVIDX(img_path=args.covidxTestImagePath,
                     file_path=args.covidxTestFilePath,
-                    augment=None,
+                    augment=transforms,
                     extra_num_class=args.extraNumClass,
                     select_num=400)
 
@@ -42,8 +42,16 @@ def test(model, args):
             target.append(labels)
     predict = torch.cat(predict, dim=0).cpu().numpy()
     target = torch.cat(target, dim=0).cpu().numpy()
+    logger.info(predict)
     auc = compute_roc_auc(target, predict, args.numClass)
     logger.info(f'\n {auc}  avg_auc: {np.average(auc)} \n')
+    results = compute_conf(target, predict)
+    for metric_name in results.keys():
+        logger.info('{} = {:.1f} [95% CI: {:.1f}-{:.1f}]'.format(metric_name,
+                                               np.mean(results[metric_name][0])*100,
+                                               results[metric_name][1]*100,
+                                               results[metric_name][2]*100,
+                                            ))
     return np.average(auc), auc
 
 

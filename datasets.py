@@ -80,6 +80,8 @@ class ChestXRay14(Dataset):
                        'Emphysema': 10, 'Fibrosis': 11, 'Pleural_Thickening': 12, 'Hernia': 13}
         for label in label_assembles:
             assert label in self.label_mappings.keys(), 'No such label!'
+        
+        filter_labels = [self.label_mappings[label_assemble] for label_assemble in label_assembles]
 
         label_assembles_mappings = [self.label_mappings[label_assemble] for label_assemble in label_assembles]
         with open(file_path, "r") as fileDescriptor:
@@ -89,10 +91,13 @@ class ChestXRay14(Dataset):
             lineItems = line.split()
             imagePath = os.path.join(img_path, lineItems[0])
             imageLabelTotal = [int(i) for i in lineItems[1:]]
-            imageLabel = [0, ] + [imageLabelTotal[label_assemble_mapping] for label_assemble_mapping in label_assembles_mappings]            
-            self.img_list.append(imagePath)
-            self.img_label.append(imageLabel)
-            self.source.append(1)
+            for filter_label in filter_labels:
+                if imageLabelTotal[filter_label]:
+                    imageLabel = [0, ] + [imageLabelTotal[label_assemble_mapping] for label_assemble_mapping in label_assembles_mappings]            
+                    self.img_list.append(imagePath)
+                    self.img_label.append(imageLabel)
+                    self.source.append(1)
+                    break
         
         self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, select_num)
         

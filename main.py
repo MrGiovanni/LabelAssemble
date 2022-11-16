@@ -4,10 +4,10 @@ import os
 import datetime 
 import os.path as osp
 from train import train
-# from test import test
-
+from test import test
+import torch
 import os
-# os.environ['CUDA_VISIBLE_DEVICES']='i'
+os.environ['CUDA_VISIBLE_DEVICES']='6'
 def get_arguments():
     parser = argparse.ArgumentParser(description="Assemble Label")
     parser.add_argument("--datasetType", type=str, default='assemble')
@@ -28,7 +28,7 @@ def get_arguments():
     parser.add_argument("--numWorkers", type=int, default=32)
     parser.add_argument("--batchSize", type=int, default=1)
     parser.add_argument("--saveDir", type=str)
-    parser.add_argument("--isTrain", type=bool, default=True)
+    parser.add_argument("--isTrain", action="store_true")
     parser.add_argument("--resumePath", type=str)
     parser.add_argument("--workDir", type=str, default='')
     parser.add_argument("--loss", type=str, default='fully')
@@ -55,5 +55,6 @@ if __name__ == "__main__":
         train(args)
     else:
         logger.info('Test starts.')
-        test(args)
+        model = torch.load(args.resumePath)
+        test(model, args)
     

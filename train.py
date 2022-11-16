@@ -64,6 +64,7 @@ def train(args):
                     label_assembles=['Pneumonia'],
                     select_num=args.chestNum)
         train_set = datasets.Assemble([covidx, chestxray14], augments=[weak_aug, strong_aug])
+        logger.info(train_set.img_label)
 
     
     elif args.datasetType == 'covidx':
@@ -77,7 +78,7 @@ def train(args):
     else:
         raise ValueError("No such dataset type: %s" % args.datasetType)
     
-    dataloader = torch.utils.data.DataLoader(train_set, batch_size=args.batchSize, num_workers=args.numWorkers, pin_memory=True)
+    dataloader = torch.utils.data.DataLoader(train_set, batch_size=args.batchSize, num_workers=args.numWorkers, shuffle=True, pin_memory=True)
 
     model = densenet121.densenet121(pretrained=True, num_classes=args.numClass)
     model.train()
@@ -123,5 +124,3 @@ def train(args):
             for param_group in optimizer.param_groups:
                 param_group["lr"]/=2.0
 
-if __name__=='__main__':
-    main()

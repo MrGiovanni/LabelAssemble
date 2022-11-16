@@ -1,0 +1,2 @@
+[2022-11-15  23:33:48.223] -> [INFO] : created work directory in .work_dir/2022_11_15_23_33_48
+[2022-11-15  23:33:48.224] -> [INFO] : Test starts.

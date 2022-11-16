@@ -1,0 +1,5 @@
+[2022-11-15  20:53:22.215] -> [INFO] : created work directory in .work_dir/2022_11_15_20_53_22
+[2022-11-15  20:53:22.216] -> [INFO] : Training starts.
+[2022-11-15  20:53:22.228] -> [INFO] : Label Assemble
+[2022-11-15  20:53:38.957] -> [INFO] : epoch: 0/1
+[2022-11-15  22:15:25.371] -> [INFO] : Testing starts!

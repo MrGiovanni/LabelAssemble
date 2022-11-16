@@ -13,6 +13,7 @@
 # --isTrain True \
 # --chestRatio 0.4 --saveDir all 
 
+rm -rf .work_dir/1000
 
 python main.py \
 --datasetType assemble \
@@ -24,11 +25,12 @@ python main.py \
 --covidxTestFilePath ../../data/COVIDX/test.txt \
 --extraNumClass 1 \
 --mode train \
---covidxNum 40000 \
---chestNum 160000 \
---isTrain True \
+--covidxNum 4000 \
+--chestNum 1000 \
 --batchSize 16 \
---epochs 1 \
+--epochs 64 \
 --numWorkers 12 \
+--isTrain \
+--workDir 1000 \
 --loss fully \
 --saveDir all  &
