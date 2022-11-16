@@ -46,12 +46,6 @@ def test(model, args):
     auc = compute_roc_auc(target, predict, args.numClass)
     logger.info(f'\n {auc}  avg_auc: {np.average(auc)} \n')
     results = compute_conf(target, predict)
-    for metric_name in results.keys():
-        logger.info('{} = {:.1f} [95% CI: {:.1f}-{:.1f}]'.format(metric_name,
-                                               np.mean(results[metric_name][0])*100,
-                                               results[metric_name][1]*100,
-                                               results[metric_name][2]*100,
-                                            ))
     return np.average(auc), auc
 
 

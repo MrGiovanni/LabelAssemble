@@ -21,7 +21,7 @@ def get_arguments():
     parser.add_argument("--numClass", type=int, default=2)
     parser.add_argument("--mode", type=str, default='train')
     parser.add_argument("--epochs", type=int, default=64)
-    parser.add_argument("--testInterval", type=int, default=3)
+    parser.add_argument("--testInterval", type=int, default=1)
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--covidxNum", type=int, default=1)
     parser.add_argument("--chestNum", type=int, default=1)
