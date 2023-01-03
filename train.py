@@ -5,7 +5,6 @@ from tqdm import tqdm
 import torchvision.transforms
 import torch.nn.functional as F
 from noise import *
-from aug import *
 import os
 from utils import *
 from loss import FullyLoss, SemiLoss
