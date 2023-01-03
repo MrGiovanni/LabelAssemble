@@ -19,8 +19,8 @@ ChestXray14Config = dict(
     train_file_path = '../../data/chestXray14/train_official.txt',
     val_file_path = '../../data/chestXray14/val_official.txt',
     test_file_path = '../../data/chestXray14/test_official.txt',
-    class_num = 14,
-    class_filter = [],
+    class_num = 1,
+    class_filter = ['Pneumonia'],
     using_num = 110000
 )
 

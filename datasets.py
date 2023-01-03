@@ -22,6 +22,7 @@ class BaseDataset(Dataset):
         self.img_label = []
         self.augment = augment
         self.source = []
+        self.label_mappings = self.label_mappings if self.label_mappings else {}
         img_dir, file_path = dataset_config['%s_img_path' % mode], dataset_config['%s_file_path' % mode]
         with open(file_path, "r") as fileDescriptor:
             lines = fileDescriptor.readlines()
@@ -31,6 +32,7 @@ class BaseDataset(Dataset):
             self.img_list.append(img_path)
             self.img_label.append(img_label)
             self.source.append(source)
+        self.filter(start_id, dataset_config['class_filter'], num_classes)
         # sample from dataset
         if is_sample:
             self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, dataset_config['using_num'])
@@ -50,10 +52,16 @@ class BaseDataset(Dataset):
     def parse_line(self, line, img_dir, start_id, num_classes):
         raise NotImplemented
         
-        
+    @abstractmethod
+    def filter(self, start_id, label_filters):
+        raise NotImplemented
 
 
 class COVIDX(BaseDataset):
+    def __init__(self, dataset_config:dict, mode:str, num_classes:int, start_id:int, source:int, augment:transforms, is_sample=True):
+        self.label_mappings = {'positive': 0, 'negative': 1}
+        super().__init__(dataset_config, mode, num_classes, start_id, source, augment, is_sample)
+        
     def parse_line(self, line, img_dir, start_id, num_classes):
         line_item = line.split(' ')
         img_path = os.path.join(img_dir, line_item[1])
@@ -61,6 +69,11 @@ class COVIDX(BaseDataset):
         if line_item[2] == 'positive':
             img_label[start_id] = 1
         return img_path, img_label
+    
+    def filter(self, start_id, label_filters, num_classes):
+        pass
+
+
 
 
 
@@ -111,59 +124,91 @@ class COVIDX(BaseDataset):
 
 
 
-
-class ChestXRay14(Dataset):
-
-    def __init__(self, img_path:str, file_path:str, augment:transforms, label_assembles:list, select_num=110000)->None:
-        """ ChestXRay14 dataset
-        Args:
-            img_path (str): the path of the image files
-            file_path (str): the path of the train/test file list
-            augment (transforms): augumentation
-            label_assembles (list): Label-Assemble classes
-            select_num (int, optional): nums of images involved in training. Defaults to 110000.
-        """        
-        self.img_list = []
-        self.img_label = []
-        self.augment = augment
-        self.source = []
+class ChestXRay14(BaseDataset):
+    
+    def __init__(self, dataset_config:dict, mode:str, num_classes:int, start_id:int, source:int, augment:transforms, is_sample=True):
         self.label_mappings = {'Atelectasis': 0, 'Cardiomegaly': 1, 'Effusion': 2, 'Infiltration': 3, 'Mass': 4, 'Nodule': 5,
                        'Pneumonia': 6, 'Pneumothorax': 7, 'Consolidation': 8, 'Edema': 9,
                        'Emphysema': 10, 'Fibrosis': 11, 'Pleural_Thickening': 12, 'Hernia': 13}
-        for label in label_assembles:
-            assert label in self.label_mappings.keys(), 'No such label!'
-        
-        filter_labels = [self.label_mappings[label_assemble] for label_assemble in label_assembles]
+        super().__init__(dataset_config, mode, num_classes, start_id, source, augment, is_sample)
 
-        label_assembles_mappings = [self.label_mappings[label_assemble] for label_assemble in label_assembles]
-        with open(file_path, "r") as fileDescriptor:
-            lines = fileDescriptor.readlines()
-        for line in lines:
-            line = line.strip()
-            lineItems = line.split()
-            imagePath = os.path.join(img_path, lineItems[0])
-            imageLabelTotal = [int(i) for i in lineItems[1:]]
-            for filter_label in filter_labels:
-                if imageLabelTotal[filter_label]:
-                    imageLabel = [0, ] + [imageLabelTotal[label_assemble_mapping] for label_assemble_mapping in label_assembles_mappings]            
-                    self.img_list.append(imagePath)
-                    self.img_label.append(imageLabel)
-                    self.source.append(1)
-                    break
-        
-        self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, select_num)
+    def parse_line(self, line, img_dir, start_id, num_classes):
+        line_item = line.split(' ')
+        img_path = os.path.join(img_dir, line_item[0])
+        img_label = [int(i) for i in line_item[1:]]
+        return img_path, img_label
+    
+    def filter(self, start_id, label_filters, num_classes):
+        img_list_filter = []
+        img_label_filter = []
+        source_filter = []
+        label_filter_mappings = [self.label_mappings[label_filter] for label_filter in label_filters]
+        label_filter_mappings.sort()
+        for i in range(len(self.source)):
+            img_label = self.img_label[i]
+            img_filter = [img_label[label_filter_mapping] for label_filter_mapping in label_filter_mappings] 
+            if sum(img_filter) == 0:
+                continue               
+            img_label = [0, ] * start_id + [img_label[label_filter_mapping] for label_filter_mapping in label_filter_mappings] + [0, ] * (num_classes - len(label_filter_mappings) - start_id)
+            img_label_filter.append(img_label)
+            source_filter.append(self.source[i])
+            img_list_filter.append(self.img_list[i])
+        self.img_list, self.img_label, self.source = img_list_filter, img_label_filter, source_filter
         
 
-    def __getitem__(self, index:int)->Tuple[torch.Tensor, list, int]:
-        imagePath = self.img_list[index]
-        imageData = Image.open(imagePath).convert('RGB')
-        imageLabel = torch.FloatTensor(self.img_label[index])
-        if self.augment != None:
-            imageData = self.augment(imageData)
-        return imageData, imageLabel, 0
 
-    def __len__(self)->int:
-        return len(self.img_list)
+# class ChestXRay14(Dataset):
+
+#     def __init__(self, img_path:str, file_path:str, augment:transforms, label_assembles:list, select_num=110000)->None:
+#         """ ChestXRay14 dataset
+#         Args:
+#             img_path (str): the path of the image files
+#             file_path (str): the path of the train/test file list
+#             augment (transforms): augumentation
+#             label_assembles (list): Label-Assemble classes
+#             select_num (int, optional): nums of images involved in training. Defaults to 110000.
+#         """        
+#         self.img_list = []
+#         self.img_label = []
+#         self.augment = augment
+#         self.source = []
+#         self.label_mappings = {'Atelectasis': 0, 'Cardiomegaly': 1, 'Effusion': 2, 'Infiltration': 3, 'Mass': 4, 'Nodule': 5,
+#                        'Pneumonia': 6, 'Pneumothorax': 7, 'Consolidation': 8, 'Edema': 9,
+#                        'Emphysema': 10, 'Fibrosis': 11, 'Pleural_Thickening': 12, 'Hernia': 13}
+#         for label in label_assembles:
+#             assert label in self.label_mappings.keys(), 'No such label!'
+        
+#         filter_labels = [self.label_mappings[label_assemble] for label_assemble in label_assembles]
+
+#         label_assembles_mappings = [self.label_mappings[label_assemble] for label_assemble in label_assembles]
+#         with open(file_path, "r") as fileDescriptor:
+#             lines = fileDescriptor.readlines()
+#         for line in lines:
+#             line = line.strip()
+#             lineItems = line.split()
+#             imagePath = os.path.join(img_path, lineItems[0])
+#             imageLabelTotal = [int(i) for i in lineItems[1:]]
+#             for filter_label in filter_labels:
+#                 if imageLabelTotal[filter_label]:
+#                     imageLabel = [0, ] + [imageLabelTotal[label_assemble_mapping] for label_assemble_mapping in label_assembles_mappings]            
+#                     self.img_list.append(imagePath)
+#                     self.img_label.append(imageLabel)
+#                     self.source.append(1)
+#                     break
+        
+#         self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, select_num)
+        
+
+#     def __getitem__(self, index:int)->Tuple[torch.Tensor, list, int]:
+#         imagePath = self.img_list[index]
+#         imageData = Image.open(imagePath).convert('RGB')
+#         imageLabel = torch.FloatTensor(self.img_label[index])
+#         if self.augment != None:
+#             imageData = self.augment(imageData)
+#         return imageData, imageLabel, 0
+
+#     def __len__(self)->int:
+#         return len(self.img_list)
 
 class Assemble(Dataset):
     def __init__(self, datasets:list, augments:list)->None:

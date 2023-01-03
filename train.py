@@ -58,11 +58,7 @@ def train(args):
         #             augment=None,
         #             extra_num_class=args.extraNumClass,
         #             select_num=args.covidxNum)
-        chestxray14 = datasets.ChestXRay14(img_path=args.chestImagePath,
-                    file_path=args.chestFilePath,
-                    augment=None,
-                    label_assembles=['Pneumonia'],
-                    select_num=args.chestNum)
+        chestxray14 = datasets.ChestXRay14(ChestXray14Config, mode='train', source=0, augment=None, start_id=1, num_classes=2)
         train_set = datasets.Assemble([covidx, chestxray14], augments=[weak_aug, strong_aug])
 
 
