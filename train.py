@@ -9,7 +9,7 @@ import os
 from utils import *
 from loss import FullyLoss, SemiLoss
 from logger import Logger
-from config import device
+from config import *
 from test import test
 
 # from loss import Loss
@@ -52,18 +52,19 @@ def train(args):
     
     if args.datasetType == 'assemble':
         logger.info('Label Assemble')
-        covidx = datasets.COVIDX(img_path=args.covidxTrainImagePath,
-                    file_path=args.covidxTrainFilePath,
-                    augment=None,
-                    extra_num_class=args.extraNumClass,
-                    select_num=args.covidxNum)
+        covidx = datasets.COVIDX(COVIDXConfig, mode='train', source=0, augment=None, start_id=0, num_classes=2)
+        # covidx = datasets.COVIDX(img_path=args.covidxTrainImagePath,
+        #             file_path=args.covidxTrainFilePath,
+        #             augment=None,
+        #             extra_num_class=args.extraNumClass,
+        #             select_num=args.covidxNum)
         chestxray14 = datasets.ChestXRay14(img_path=args.chestImagePath,
                     file_path=args.chestFilePath,
                     augment=None,
                     label_assembles=['Pneumonia'],
                     select_num=args.chestNum)
         train_set = datasets.Assemble([covidx, chestxray14], augments=[weak_aug, strong_aug])
-        logger.info(train_set.img_label)
+
 
     
     elif args.datasetType == 'covidx':

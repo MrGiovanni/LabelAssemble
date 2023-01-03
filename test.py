@@ -8,6 +8,7 @@ from noise import *
 from config import device
 from metrics import *
 from logger import Logger
+from config import *
 
 def test(model, args):
 
@@ -20,11 +21,7 @@ def test(model, args):
                                                 normalize])
     logger = Logger()
     
-    test_set = datasets.COVIDX(img_path=args.covidxTestImagePath,
-                    file_path=args.covidxTestFilePath,
-                    augment=transforms,
-                    extra_num_class=args.extraNumClass,
-                    select_num=400)
+    test_set = dcovidx = datasets.COVIDX(COVIDXConfig, mode='test', source=0, augment=transforms, start_id=0, num_classes=2)
 
     dataloader = torch.utils.data.DataLoader(test_set, batch_size=args.batchSize, shuffle=True, num_workers=12, pin_memory=True)
 

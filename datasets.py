@@ -10,40 +10,32 @@ from utils import sample
 from torch import FloatTensor
 from typing import Union, Tuple, List
 from PIL import ImageFile
+from abc import abstractmethod
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-class COVIDX(Dataset):
-    def __init__(self, img_path:str, file_path:str, augment:transforms, extra_num_class:int, select_num:int=30000)->None:
-        """ COVIDx dataset
-        Args:
-            img_path (str): the path of the image files
-            file_path (str): the path of the train/test file list
-            augment (transforms): augumentation
-            extra_num_class (int): Label-Assemble classes nums
-            select_num (int, optional): nums of images involved in training. Defaults to 30000.
-        """        
+
+
+class BaseDataset(Dataset):
+    
+    def __init__(self, dataset_config:dict, mode:str, num_classes:int, start_id:int, source:int, augment:transforms, is_sample=True):
         self.img_list = []
         self.img_label = []
         self.augment = augment
         self.source = []
+        img_dir, file_path = dataset_config['%s_img_path' % mode], dataset_config['%s_file_path' % mode]
         with open(file_path, "r") as fileDescriptor:
             lines = fileDescriptor.readlines()
         for line in lines:
             line = line.strip()
-            lineItems = line.split()
-            imagePath = os.path.join(img_path, lineItems[1])
-            self.img_list.append(imagePath)
-            if lineItems[2] == 'positive':
-                imageLabel = [1, ] + [0, ] * extra_num_class
-            else:
-                imageLabel = [0,] + [0, ] * extra_num_class
-            self.img_label.append(imageLabel)
-            self.source.append(0)
+            img_path, img_label = self.parse_line(line, img_dir, start_id, num_classes)  
+            self.img_list.append(img_path)
+            self.img_label.append(img_label)
+            self.source.append(source)
         # sample from dataset
-        self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, select_num)
-        
-    
-    def __getitem__(self, index:int)->Tuple[FloatTensor, list, int]:
+        if is_sample:
+            self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, dataset_config['using_num'])
+
+    def __getitem__(self, index:int):
         imagePath = self.img_list[index]
         imageData = Image.open(imagePath).convert('RGB')
         imageLabel = torch.FloatTensor(self.img_label[index])
@@ -53,9 +45,69 @@ class COVIDX(Dataset):
 
     def __len__(self)->int:
         return len(self.img_list)
+    
+    @abstractmethod
+    def parse_line(self, line, img_dir, start_id, num_classes):
+        raise NotImplemented
+        
+        
 
-    def get_labels(self, idx:int)->int:
-        return self.img_label[idx].index(1)
+
+class COVIDX(BaseDataset):
+    def parse_line(self, line, img_dir, start_id, num_classes):
+        line_item = line.split(' ')
+        img_path = os.path.join(img_dir, line_item[1])
+        img_label = [0, ] * num_classes
+        if line_item[2] == 'positive':
+            img_label[start_id] = 1
+        return img_path, img_label
+
+
+
+# class COVIDX(Dataset):
+#     def __init__(self, img_path:str, file_path:str, augment:transforms, extra_num_class:int, start_id:int=0, select_num:int=30000)->None:
+#         """ COVIDx dataset
+#         Args:
+#             img_path (str): the path of the image files
+#             file_path (str): the path of the train/test file list
+#             augment (transforms): augumentation
+#             extra_num_class (int): Label-Assemble classes nums
+#             select_num (int, optional): nums of images involved in training. Defaults to 30000.
+#         """        
+#         self.img_list = []
+#         self.img_label = []
+#         self.augment = augment
+#         self.source = []
+#         with open(file_path, "r") as fileDescriptor:
+#             lines = fileDescriptor.readlines()
+#         for line in lines:
+#             line = line.strip()
+#             lineItems = line.split()
+#             imagePath = os.path.join(img_path, lineItems[1])
+#             self.img_list.append(imagePath)
+#             if lineItems[2] == 'positive':
+#                 imageLabel = [1, ] + [0, ] * extra_num_class
+#             else:
+#                 imageLabel = [0,] + [0, ] * extra_num_class
+#             self.img_label.append(imageLabel)
+#             self.source.append(0)
+#         # sample from dataset
+#         self.img_list, self.img_label, self.source = sample(self.img_list, self.img_label, self.source, select_num)
+        
+    
+#     def __getitem__(self, index:int)->Tuple[FloatTensor, list, int]:
+#         imagePath = self.img_list[index]
+#         imageData = Image.open(imagePath).convert('RGB')
+#         imageLabel = torch.FloatTensor(self.img_label[index])
+#         if self.augment != None:
+#             imageData = self.augment(imageData)
+#         return imageData, imageLabel, 0
+
+#     def __len__(self)->int:
+#         return len(self.img_list)
+
+#     def get_labels(self, idx:int)->int:
+#         return self.img_label[idx].index(1)
 
 
 
