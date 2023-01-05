@@ -7,7 +7,7 @@ from train import train
 from test import test
 import torch
 import os
-
+os.environ['CUDA_VISIBLE_DEVICES']='6'
 def get_arguments():
     parser = argparse.ArgumentParser(description="Assemble Label")
     parser.add_argument("--datasetType", type=str, default='assemble', help='The dataset you want to use.')  

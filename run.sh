@@ -6,7 +6,6 @@ python main.py \
 --batchSize 16 \
 --epochs 64 \
 --numWorkers 12 \
---isTrain \
 --workDir 30000 \
 --loss fully \
 --saveDir all  &

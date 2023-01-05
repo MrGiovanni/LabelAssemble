@@ -1,3 +1,7 @@
+
+assemble_datasets = ['covidx', 'chestxray14']
+
+
 COVIDXConfig = dict(
     train_img_path = '../../data/COVIDX/train',
     val_img_path = None,

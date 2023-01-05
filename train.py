@@ -11,7 +11,7 @@ from loss import FullyLoss, SemiLoss
 from logger import Logger
 from config import *
 from test import test
-
+from build import build_dataset
 # from loss import Loss
 
 
@@ -50,30 +50,7 @@ def train(args):
         torchvision.transforms.RandomErasing()
     ])
     
-    if args.datasetType == 'assemble':
-        logger.info('Label Assemble')
-        covidx = datasets.COVIDX(COVIDXConfig, mode='train', source=0, augment=None, start_id=0, num_classes=2)
-        # covidx = datasets.COVIDX(img_path=args.covidxTrainImagePath,
-        #             file_path=args.covidxTrainFilePath,
-        #             augment=None,
-        #             extra_num_class=args.extraNumClass,
-        #             select_num=args.covidxNum)
-        chestxray14 = datasets.ChestXRay14(ChestXray14Config, mode='train', source=0, augment=None, start_id=1, num_classes=2)
-        train_set = datasets.Assemble([covidx, chestxray14], augments=[weak_aug, strong_aug])
-
-
-    
-    elif args.datasetType == 'covidx':
-        logger.info('COVIDx')
-        train_set = datasets.COVIDX(img_path=args.covidxTrainImagePath,
-                    file_path=args.covidxTrainFilePath,
-                    augment=None,
-                    extra_num_class=args.extraNumClass,
-                    select_num=args.covidxNum)
-
-    else:
-        raise ValueError("No such dataset type: %s" % args.datasetType)
-    
+    train_set = build_dataset(args, weak_aug, strong_aug)
     dataloader = torch.utils.data.DataLoader(train_set, batch_size=args.batchSize, num_workers=args.numWorkers, shuffle=True, pin_memory=True)
 
     model = densenet121.densenet121(pretrained=True, num_classes=args.numClass)

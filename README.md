@@ -81,4 +81,5 @@ In `datasets.py`, there is a `class` named `CustomDataset`. It is subclass of `B
 And the `filter` is to filter classes that you do not want to use.
 Remeber that these two function must be implemented.
 
-### 3. 
+### 3. Modify Config
+In `config.py`, you should change the variable `assemble_datasets`. It tells codes what dataset you want to use.
