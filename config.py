@@ -31,7 +31,7 @@ CustomConfig = dict(
     train_file_path = None,
     val_file_path = None,
     test_file_path = None,
-    class_num = 14,
-    class_filter = [],
-    using_num = 110000
+    class_num = None,
+    class_filter = None,
+    using_num = None
 )

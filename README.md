@@ -50,4 +50,35 @@ Note that you should change the parameters.
 
 ## Train models from your own data
 
-### 1. Clone the repository
+### 1. Implement Dataset Config
+In `config.py`, there is a `dict` named `CustomConfig`. 
+```python
+CustomConfig = dict(
+    train_img_path = None,
+    val_img_path = None,
+    test_img_path = None,
+    train_file_path = None,
+    val_file_path = None,
+    test_file_path = None,
+    class_num = None,
+    class_filter = None,
+    using_num = None
+)
+```
+What you need to do is implement these codes.
+- train_img_path: the directory of train set.
+- val_img_path: the directory of validation set.
+- test_img_path: the directory of test set.
+- train_file_path: the path of train file.
+- val_file_path: the path of validation file.
+- test_file_path: the path of test file.
+- class_filter: classes that you need.
+- using_num: the total numbel images that you want to use.
+
+
+### 2. Implement Dataset
+In `datasets.py`, there is a `class` named `CustomDataset`. It is subclass of `BaseDataset`. What you need to do is to implement two functions: `parse_line` and `filter`. The input of `parse_line` is one line of the train/val/test file, and the output is image label and image path. 
+And the `filter` is to filter classes that you do not want to use.
+Remeber that these two function must be implemented.
+
+### 3. 
