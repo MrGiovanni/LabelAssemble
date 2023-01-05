@@ -141,35 +141,3 @@ class Assemble(Dataset):
     def __len__(self):
         return len(self.img_list)
         
-    def get_labels(self, idx):
-        # TODO
-        if self.source[idx] == 0:
-            if self.img_label[idx][0] == 0:
-                return 0
-            else:
-                return 1
-        else:
-            if sum(self.img_label[idx]) == 0:
-                return 2
-            else:
-                return self.img_label[idx].index(1) + 2   
-
-
-
-
-
-if __name__ == '__main__':
-    covidx = COVIDX(img_path='/Users/zenglezhu/code/dataset/COVIDX/train',
-                    file_path='/Users/zenglezhu/code/dataset/COVIDX/train.txt',
-                    augment=None,
-                    extra_num_class=0,
-                    select_num=10000)
-    chest = ChestXRay14(img_path='/Users/zenglezhu/code/dataset/chestxray14/train',
-                    file_path='/Users/zenglezhu/code/dataset/chestxray14/train_official.txt',
-                    augment=None,
-                    label_assembles=['Pneumonia'],
-                    select_num=10000)
-    assemble = Assemble([covidx, chest], None)
-    print(len(assemble.source))
-
-
