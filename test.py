@@ -5,7 +5,6 @@ import numpy as np
 import torchvision.transforms
 import torch.nn.functional as F
 from noise import *
-from config import device
 from metrics import *
 from logger import Logger
 from config import *
@@ -31,15 +30,14 @@ def test(model, args):
     logger.info('Testing starts!')
 
     for inputs, labels, _ in tqdm(dataloader):
-        inputs = inputs.to(device)
-        labels = labels.to(device)
+        inputs = inputs.to(args.device)
+        labels = labels.to(args.device)
         with torch.no_grad():
             outputs,fea=model(inputs)
             predict.append(outputs)
             target.append(labels)
     predict = torch.cat(predict, dim=0).cpu().numpy()
     target = torch.cat(target, dim=0).cpu().numpy()
-    logger.info(predict)
     auc = compute_roc_auc(target, predict, args.numClass)
     logger.info(f'\n {auc}  avg_auc: {np.average(auc)} \n')
     results = compute_conf(target, predict)

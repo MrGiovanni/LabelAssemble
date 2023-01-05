@@ -78,7 +78,7 @@ def train(args):
 
     model = densenet121.densenet121(pretrained=True, num_classes=args.numClass)
     model.train()
-    model = model.to(device)
+    model = model.to(args.device)
     optimizer = torch.optim.Adam(lr=args.lr, params=filter(lambda p: p.requires_grad, model.parameters()))
 
     best_auc = -1
@@ -91,7 +91,7 @@ def train(args):
         logger.info(f'epoch: {i}/{args.epochs}')
         cnt = 0
         for img, label, source, img_consistency in tqdm(dataloader):
-            img, label, source, img_consistency=img.to(device), label.to(device), source.to(device), img_consistency.to(device)
+            img, label, source, img_consistency=img.to(args.device), label.to(args.device), source.to(args.device), img_consistency.to(args.device)
             output, _ = model(img)
             output_consistency, _ = model(img_consistency)
             criterion = FullyLoss()

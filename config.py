@@ -1,5 +1,3 @@
-device = 'cuda'
-
 COVIDXConfig = dict(
     train_img_path = '../../data/COVIDX/train',
     val_img_path = None,

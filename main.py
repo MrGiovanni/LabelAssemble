@@ -10,21 +10,13 @@ import os
 os.environ['CUDA_VISIBLE_DEVICES']='6'
 def get_arguments():
     parser = argparse.ArgumentParser(description="Assemble Label")
-    parser.add_argument("--datasetType", type=str, default='assemble')
-    parser.add_argument("--covidxTrainImagePath", type=str)
-    parser.add_argument("--covidxTestImagePath", type=str)
-    parser.add_argument("--chestImagePath", type=str)
-    parser.add_argument('--covidxTrainFilePath', type=str)
-    parser.add_argument('--covidxTestFilePath', type=str)
-    parser.add_argument("--chestFilePath", type=str)
-    parser.add_argument("--extraNumClass", type=int, default=1)
+    parser.add_argument("--datasetType", type=str, default='assemble', help='The dataset you want to use.')  
+    parser.add_argument("--device", type=str, default='cuda', help='cpu or cuda')
     parser.add_argument("--numClass", type=int, default=2)
     parser.add_argument("--mode", type=str, default='train')
     parser.add_argument("--epochs", type=int, default=64)
     parser.add_argument("--testInterval", type=int, default=1)
     parser.add_argument("--lr", type=float, default=2e-4)
-    parser.add_argument("--covidxNum", type=int, default=1)
-    parser.add_argument("--chestNum", type=int, default=1)
     parser.add_argument("--numWorkers", type=int, default=32)
     parser.add_argument("--batchSize", type=int, default=1)
     parser.add_argument("--saveDir", type=str)
@@ -32,7 +24,6 @@ def get_arguments():
     parser.add_argument("--resumePath", type=str)
     parser.add_argument("--workDir", type=str, default='')
     parser.add_argument("--loss", type=str, default='fully')
-    # temperature 
     return parser
 
 
