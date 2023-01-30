@@ -1,5 +1,3 @@
-rm -rf .work_dir/30000
-
 python main.py \
 --datasetType assemble \
 --mode train \
