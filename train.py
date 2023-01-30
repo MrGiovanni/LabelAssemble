@@ -70,11 +70,13 @@ def train(args):
         for img, label, source, img_consistency in tqdm(dataloader):
             img, label, source, img_consistency=img.to(args.device), label.to(args.device), source.to(args.device), img_consistency.to(args.device)
             output, _ = model(img)
-            output_consistency, _ = model(img_consistency)
-            criterion = FullyLoss()
-            if args.datasetType == 'assemble':        
-                loss = criterion(output, label, source)
-
+            if args.loss == 'fully':
+                criterion = FullyLoss()    
+                loss = criterion(output, label, source, train_set.label_mapping, target_source)
+            else:
+                criterion = SemiLoss()
+                output_consistency, _ = model(img_consistency)
+                loss = criterion(output, output_consistency, label, source, train_set.label_mapping, target_source)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()

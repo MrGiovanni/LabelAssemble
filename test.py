@@ -8,28 +8,51 @@ from noise import *
 from metrics import *
 from logger import Logger
 from config import *
+import copy
+from build import build_dataset
+
 
 def test(model, args):
-
+    args_temp = copy.deepcopy(args)
+    args_temp.mode = 'test'
     normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
-    transforms=torchvision.transforms.Compose([
-                                                torchvision.transforms.Resize(256),
-                                                torchvision.transforms.CenterCrop(256),
-                                                torchvision.transforms.ToTensor(),
-                                                normalize])
-    logger = Logger()
-    
-    test_set = dcovidx = datasets.COVIDX(COVIDXConfig, mode='test', source=0, augment=transforms, start_id=0, num_classes=2)
+                                                 std=[0.229, 0.224, 0.225])
 
-    dataloader = torch.utils.data.DataLoader(test_set, batch_size=args.batchSize, shuffle=True, num_workers=12, pin_memory=True)
+    weak_aug = torchvision.transforms.Compose([
+        torchvision.transforms.RandomHorizontalFlip(),
+        torchvision.transforms.RandomRotation(10),
+        torchvision.transforms.Resize(256),
+        AddPepperNoise(snr=0.9, p=0.1),
+        AddGaussianNoise(p=0.3),
+        torchvision.transforms.CenterCrop(256),
+        torchvision.transforms.ToTensor(),
+        normalize
+    ])
+
+    strong_aug = torchvision.transforms.Compose([
+        torchvision.transforms.RandomHorizontalFlip(),
+        torchvision.transforms.RandomRotation(15),
+        torchvision.transforms.Resize(256),
+        torchvision.transforms.CenterCrop(256),
+        AddPepperNoise(snr=0.7, p=0.5),
+        AddGaussianNoise(p=0.5),
+        torchvision.transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5),
+        torchvision.transforms.ToTensor(),
+        normalize,
+        torchvision.transforms.RandomErasing()
+    ])
+    
+    test_set = build_dataset(args_temp, weak_aug, strong_aug)
+    logger = Logger()
+
+    dataloader = torch.utils.data.DataLoader(test_set, batch_size=args.batchSize, shuffle=False, num_workers=12, pin_memory=True)
 
     predict = []
     target = []
     model.eval()
     logger.info('Testing starts!')
 
-    for inputs, labels, _ in tqdm(dataloader):
+    for inputs, labels, source, img_consistency in tqdm(dataloader):
         inputs = inputs.to(args.device)
         labels = labels.to(args.device)
         with torch.no_grad():

@@ -77,9 +77,40 @@ What you need to do is implement these codes.
 
 
 ### 2. Implement Dataset
-In `datasets.py`, there is a `class` named `CustomDataset`. It is subclass of `BaseDataset`. What you need to do is to implement two functions: `parse_line` and `filter`. The input of `parse_line` is one line of the train/val/test file, and the output is image label and image path. 
-And the `filter` is to filter classes that you do not want to use.
-Remeber that these two function must be implemented.
+In `datasets.py`, there is a `class` named `CustomDataset`. It is subclass of `BaseDataset`. What you need to do is to implement one functions: `parse_line`. The input of `parse_line` is one line of the train/val/test file, and the output is image label and image path. 
+Remeber that this function must be implemented.
 
 ### 3. Modify Config
-In `config.py`, you should change the variable `assemble_datasets`. It tells codes what dataset you want to use.
+In `config.py`, you should change three variables: `assemble_datasets`, `class_interests`, `target_source`.
+For example:
+```python
+assemble_datasets = ['covidx', 'chestxray14']
+```
+This means that COVIDX and ChestXRay14 will be assembled.
+```python
+class_interests = ['CovidPositive']
+```
+This means that classes of interest is CovidPositive.
+```python
+target_source = [0, ]
+```
+This means that datasets' source we are interested in is 0.
+Moreover, our codes can contains 15 diseases:
+```
+ Atelectasis
+ Cardiomegaly
+ Effusion
+ Infiltration
+ Mass
+ Nodule           
+ Pneumonia
+ Pneumothorax
+ Consolidation
+ Edema                  
+ Emphysema
+ Fibrosis
+ Pleural_Thickening
+ Hernia
+ CovidPositive
+``` 
+If your dataset contains a new disease, you need to modify `class_mapping`.

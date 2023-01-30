@@ -46,11 +46,5 @@ def compute_conf(gt, pred, threshold:int=0.5, sample_time:int=100, sample_ratio:
         lower, upper = st.t.interval(alpha=0.95, df=len(metrics[metric_name])-1, 
                                     loc=np.mean(metrics[metric_name]), 
                                     scale=st.sem(metrics[metric_name])) 
-        results[metric_name] = [metrics[metric_name], lower, upper]
-    
+        results[metric_name] = [metrics[metric_name], lower, upper] 
     return results
-        # print('{} = {:.1f} [95% CI: {:.1f}-{:.1f}]'.format(metric_name,
-        #                                                 np.mean(metrics[metric_name])*100,
-        #                                                 lower*100,
-        #                                                 upper*100,
-        #                                                 ))

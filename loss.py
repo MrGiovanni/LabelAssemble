@@ -2,6 +2,7 @@ import torch.nn as nn
 from torch import FloatTensor
 import torch
 import torch.nn.functional as F
+from config import class_interests
 
 class FullyLoss(nn.Module):
     def __init__(self)->None:
@@ -9,7 +10,7 @@ class FullyLoss(nn.Module):
         self.criterion = nn.BCELoss()
 
 
-    def forward(self, output:FloatTensor, label:FloatTensor, source:list)->FloatTensor:
+    def forward(self, output:FloatTensor, label:FloatTensor, source:list, label_mapping:dict, target_source)->FloatTensor:
         """caculate loss function
 
         Args:
@@ -21,18 +22,16 @@ class FullyLoss(nn.Module):
             FloatTensor: BCE loss 
         """        
         device = output.device
-        batch_size, num_class = output.shape
+        batch_size, _ = output.shape
         loss = torch.tensor(0.).to(device)
-
+        cnt = 0
+        classes = [label_mapping[c] for c in class_interests]
         for b in range(batch_size):
-            for c in range(num_class):
-                if source[b] == 0:
+            for c in classes:
+                if source[b] in target_source:
+                    cnt += 1
                     loss += self.criterion(output[b][c], label[b][c])
-                elif source[b] == 1:
-                    loss += self.criterion(output[b][c], label[b][c])
-
-
-        loss /= batch_size
+        loss /= cnt
         return loss
 
 
@@ -50,8 +49,7 @@ class SemiLoss(nn.Module):
         self.temperature = temperature
         self.threshold = threshold
         self.out_sharp = [] 
-
-    def forward(self, output:FloatTensor, output_consistency:FloatTensor, label:FloatTensor, source:list)->FloatTensor:
+    def forward(self, output:FloatTensor, output_consistency:FloatTensor, label:FloatTensor, source:list, label_mapping:dict, target_source)->FloatTensor:
         """caculate loss function
 
         Args:
@@ -66,21 +64,22 @@ class SemiLoss(nn.Module):
         loss = torch.tensor(0.).cuda()
         consistency_loss = torch.tensor(0.).cuda()
         pseudo_loss = torch.tensor(0.).cuda()   
+        classes = [label_mapping[c] for c in class_interests]
+        cnt = 0
         for b in range(batch_size):
-            for c in range(num_class):
-                if source[b] == 0:
+            for c in classes:
+                if source[b] in target_source:
+                    cnt += 1
                     loss += self.criterion(output[b][c], label[b][c])
-                elif source[b] == 1:
-                    loss += self.criterion(output[b][c], label[b][c])
-                if output[b][c] > self.threshold:
-                    out_sharp = output[b][c] + (1 - output[b][c]) / self.temperature
-                else:
-                    out_sharp = output[b][c] - output[b][c] / self.temperature
-                pseudo_loss += F.mse_loss(output[b][c], out_sharp).cuda()
-                consistency_loss += F.mse_loss(output_consistency[b][c], out_sharp).cuda()
+                    if output[b][c] > self.threshold:
+                        out_sharp = output[b][c] + (1 - output[b][c]) / self.temperature
+                    else:
+                        out_sharp = output[b][c] - output[b][c] / self.temperature
+                    pseudo_loss += F.mse_loss(output[b][c], out_sharp).cuda()
+                    consistency_loss += F.mse_loss(output_consistency[b][c], out_sharp).cuda()
 
         loss += consistency_loss
         loss += pseudo_loss
-        loss /= batch_size
+        loss /= cnt
         return loss
 

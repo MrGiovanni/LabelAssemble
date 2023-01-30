@@ -7,7 +7,7 @@ from train import train
 from test import test
 import torch
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='6'
+os.environ['CUDA_VISIBLE_DEVICES']='1'
 def get_arguments():
     parser = argparse.ArgumentParser(description="Assemble Label")
     parser.add_argument("--datasetType", type=str, default='assemble', help='The dataset you want to use.')  
@@ -22,7 +22,7 @@ def get_arguments():
     parser.add_argument("--saveDir", type=str, help='the model parameters saves in saveDir')
     parser.add_argument("--resumePath", type=str, help='pretrained model path')
     parser.add_argument("--workDir", type=str, default='', help='work directory')
-    parser.add_argument("--loss", type=str, default='fully', help='fully/semi')
+    parser.add_argument("--loss", type=str, default='semi', help='fully/semi')
     return parser
 
 
